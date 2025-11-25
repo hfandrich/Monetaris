@@ -1,0 +1,15 @@
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\bin\Debug\net9.0\Monetaris.Debtor.deps.json
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\bin\Debug\net9.0\Monetaris.Debtor.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\bin\Debug\net9.0\Monetaris.Debtor.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\bin\Debug\net9.0\Monetaris.Shared.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\bin\Debug\net9.0\Monetaris.Shared.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.csproj.AssemblyReference.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.AssemblyInfoInputs.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.AssemblyInfo.cs
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.csproj.CoreCompileInputs.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetari.562EF3DF.Up2Date
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\refint\Monetaris.Debtor.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\Monetaris.Debtor.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Debtor\obj\Debug\net9.0\ref\Monetaris.Debtor.dll

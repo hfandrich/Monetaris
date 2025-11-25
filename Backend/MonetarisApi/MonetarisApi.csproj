@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Monetaris.Shared\Monetaris.Shared.csproj" />
+    <ProjectReference Include="..\Monetaris.Tenant\Monetaris.Tenant.csproj" />
+    <ProjectReference Include="..\Monetaris.Kreditor\Monetaris.Kreditor.csproj" />
+    <ProjectReference Include="..\Monetaris.User\Monetaris.User.csproj" />
+    <ProjectReference Include="..\Monetaris.Debtor\Monetaris.Debtor.csproj" />
+    <ProjectReference Include="..\Monetaris.Case\Monetaris.Case.csproj" />
+    <ProjectReference Include="..\Monetaris.Document\Monetaris.Document.csproj" />
+    <ProjectReference Include="..\Monetaris.Inquiry\Monetaris.Inquiry.csproj" />
+    <ProjectReference Include="..\Monetaris.Template\Monetaris.Template.csproj" />
+    <ProjectReference Include="..\Monetaris.Dashboard\Monetaris.Dashboard.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,88 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Monetaris.Kreditor.Services;
+using Monetaris.Shared.Models;
+using Monetaris.Shared.Models.Entities;
+using Monetaris.Shared.Interfaces;
+using System.Security.Claims;
+
+namespace Monetaris.Kreditor.Api;
+
+/// <summary>
+/// [DESCRIBE WHAT THIS ENDPOINT DELETES]
+/// Example: Soft-deletes a contact person from a Kreditor
+/// </summary>
+[ApiController]
+[Route("api/[ROUTE]")]
+[Authorize]  // Add specific roles if needed: [Authorize(Roles = "ADMIN")]
+public class [ENDPOINT_NAME] : ControllerBase
+{
+    private readonly I[DOMAIN]Service _service;
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<[ENDPOINT_NAME]> _logger;
+
+    public [ENDPOINT_NAME](
+        I[DOMAIN]Service service,
+        IApplicationDbContext context,
+        ILogger<[ENDPOINT_NAME]> logger)
+    {
+        _service = service;
+        _context = context;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// [DETAILED ENDPOINT DESCRIPTION]
+    /// Example: Soft-delete a contact person (sets IsDeleted flag)
+    /// </summary>
+    /// <param name="id">[ID PARAMETER DESCRIPTION]</param>
+    /// <returns>204 No Content on success</returns>
+    [HttpDelete("{id}")]  // Or [HttpDelete("{parentId}/[resource]/{id}")] for nested
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Handle(Guid id)
+    {
+        _logger.LogInformation("Deleting [resource] {Id}", id);
+
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            _logger.LogWarning("Unauthorized access attempt to [ENDPOINT_NAME]");
+            return Unauthorized();
+        }
+
+        var result = await _service.[METHOD_NAME]Async(id, currentUser);
+
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorMessage == "[NOT_FOUND_MESSAGE]")
+            {
+                _logger.LogWarning("[Resource] {Id} not found for deletion", id);
+                return NotFound(new { error = result.ErrorMessage });
+            }
+
+            _logger.LogWarning("Failed to delete [resource] {Id}: {Error}",
+                id, result.ErrorMessage);
+            return BadRequest(new { error = result.ErrorMessage });
+        }
+
+        _logger.LogInformation("Successfully deleted [resource] {Id} by user {UserId}",
+            id, currentUser.Id);
+
+        return NoContent();
+    }
+
+    private async Task<User?> GetCurrentUserAsync()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return null;
+        }
+
+        return await _context.Users.FindAsync(userId);
+    }
+}

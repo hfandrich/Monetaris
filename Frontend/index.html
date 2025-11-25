@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inkasso Monetaris | Future Finance</title>
+    <meta name="description" content="AI-Powered Debt Collection" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              monetaris: {
+                950: 'var(--color-monetaris-950)',
+                900: 'var(--color-monetaris-900)',
+                800: 'var(--color-monetaris-800)',
+                600: 'var(--color-monetaris-600)',
+                500: 'var(--color-monetaris-500)', 
+                400: 'var(--color-monetaris-400)', 
+                300: 'var(--color-monetaris-300)',
+                200: 'var(--color-monetaris-200)',
+                100: 'var(--color-monetaris-100)',
+                accent: 'var(--color-monetaris-accent)', 
+              },
+              obsidian: 'var(--color-obsidian)', 
+              charcoal: '#050505',
+              ai: {
+                purple: '#7C3AED',
+                blue: '#3B82F6',
+                indigo: '#6366F1'
+              }
+            },
+            fontFamily: {
+              sans: ['Manrope', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+            },
+            boxShadow: {
+              'glow-green': '0 0 30px -5px rgba(0, 240, 149, 0.3)',
+              'glow-blue': '0 0 30px -5px rgba(59, 130, 246, 0.3)',
+              'glass-sm': '0 0 0 1px rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.2)',
+              'glass-md': '0 0 0 1px rgba(255,255,255,0.05), 0 12px 24px -8px rgba(0,0,0,0.3)',
+              'glass-lg': '0 0 0 1px rgba(255,255,255,0.05), 0 24px 48px -12px rgba(0,0,0,0.4)',
+            },
+            animation: {
+              'blob': 'blob 20s infinite',
+              'float': 'float 8s ease-in-out infinite',
+              'shimmer': 'shimmer 3s linear infinite',
+              'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'grid-flow': 'gridFlow 20s linear infinite',
+            },
+            keyframes: {
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.05)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.95)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' }
+              },
+              gridFlow: {
+                '0%': { backgroundPosition: '0 0' },
+                '100%': { backgroundPosition: '40px 40px' }
+              }
+            },
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+              'glass-gradient': 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+              'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/tailwindcss">
+      :root {
+        /* Standard Theme (Emerald/Teal) */
+        --color-monetaris-950: #010B07;
+        --color-monetaris-900: #02120C;
+        --color-monetaris-800: #064E3B;
+        --color-monetaris-600: #059669;
+        --color-monetaris-500: #10B981;
+        --color-monetaris-400: #34D399;
+        --color-monetaris-300: #6EE7B7;
+        --color-monetaris-200: #A7F3D0;
+        --color-monetaris-100: #D1FAE5;
+        --color-monetaris-accent: #00F095;
+        --color-obsidian: #000000;
+      }
+
+      /* Professional Barbie Theme (Lighter, Friendlier, Premium) */
+      .theme-barbie {
+        --color-monetaris-950: #4A044E; /* Deep Violet text */
+        --color-monetaris-900: #701A75;
+        --color-monetaris-800: #9D174D;
+        --color-monetaris-600: #DB2777; /* Deep Pink */
+        --color-monetaris-500: #EC4899; /* Vibrant Pink */
+        --color-monetaris-400: #F472B6; /* Soft Pink */
+        --color-monetaris-300: #F9A8D4;
+        --color-monetaris-200: #FBCFE8;
+        --color-monetaris-100: #FCE7F3;
+        --color-monetaris-accent: #F0ABFC; /* Soft Fuchsia Glow */
+        --color-obsidian: #2D0817; /* Keeps compatibility for dark sections if needed */
+      }
+
+      /* Background Overrides for Barbie Theme - Unique Pearlescent Look */
+      .theme-barbie body {
+        /* Soft gradient mesh background */
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(322, 90%, 96%, 1) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, hsla(298, 80%, 98%, 1) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, hsla(340, 100%, 97%, 1) 0, transparent 50%);
+        background-color: #FFF1F2 !important;
+        color: #4A044E !important;
+      }
+
+      /* Specific override for slate-50/bg-white panels in Barbie mode to be creamier */
+      .theme-barbie .bg-white, 
+      .theme-barbie .bg-slate-50 {
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        border-color: #FBCFE8 !important; /* Pink 200 */
+      }
+      
+      .theme-barbie .glass-panel {
+         background-color: rgba(255, 255, 255, 0.7) !important;
+         border-color: rgba(236, 72, 153, 0.3) !important;
+         box-shadow: 0 8px 32px rgba(236, 72, 153, 0.1) !important;
+      }
+      
+      /* Adjust text colors in Barbie mode to avoid harsh blacks */
+      .theme-barbie .text-slate-900 { color: #4A044E !important; } /* Deep Purple */
+      .theme-barbie .text-slate-500 { color: #831843 !important; } /* Muted Burgundy */
+      .theme-barbie .text-slate-400 { color: #BE185D !important; opacity: 0.6; }
+
+      body {
+        font-feature-settings: "ss01", "ss02", "cv01", "cv02", "salt";
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Cinematic Noise Overlay */
+      .noise-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 50;
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        mix-blend-mode: overlay;
+      }
+
+      /* Subtle Grid Background */
+      .bg-grid {
+        background-size: 40px 40px;
+        mask-image: linear-gradient(to bottom, transparent, 10% black, 90% black, transparent);
+      }
+
+      /* Premium Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        @apply bg-slate-300 dark:bg-white/10; 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        @apply dark:bg-monetaris-500; 
+      }
+      
+      /* Barbie scrollbar */
+      .theme-barbie ::-webkit-scrollbar-thumb {
+        background-color: #F472B6;
+      }
+
+      /* Utility Classes for Glass */
+      .glass-base {
+        @apply bg-white/60 dark:bg-[#050505]/60 backdrop-blur-xl border border-white/20 dark:border-white/5;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="antialiased selection:bg-monetaris-accent selection:text-black overflow-x-hidden bg-[#FAFAFA] text-slate-950 dark:bg-obsidian dark:text-white transition-colors duration-700">
+    <div class="noise-overlay"></div>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

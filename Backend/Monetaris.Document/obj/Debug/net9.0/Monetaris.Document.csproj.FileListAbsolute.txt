@@ -1,0 +1,15 @@
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\bin\Debug\net9.0\Monetaris.Document.deps.json
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\bin\Debug\net9.0\Monetaris.Document.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\bin\Debug\net9.0\Monetaris.Document.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\bin\Debug\net9.0\Monetaris.Shared.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\bin\Debug\net9.0\Monetaris.Shared.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.csproj.AssemblyReference.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.AssemblyInfoInputs.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.AssemblyInfo.cs
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.csproj.CoreCompileInputs.cache
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetari.A80B2EBD.Up2Date
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\refint\Monetaris.Document.dll
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\Monetaris.Document.pdb
+C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\Monetaris.Document\obj\Debug\net9.0\ref\Monetaris.Document.dll

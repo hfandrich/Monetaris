@@ -1,0 +1,57 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Monetaris.Debtor.Services;
+using Monetaris.Debtor.Models;
+using Monetaris.Shared.Models;
+
+namespace Monetaris.Debtor.Api;
+
+/// <summary>
+/// 🤖 TEMPLATE for PUT endpoints (Update operations)
+/// AI: Copy this file and modify only the marked sections
+/// </summary>
+[ApiController]
+[Route("api/debtors")]
+public class _TEMPLATE_Put : ControllerBase
+{
+    private readonly IDebtorService _service;
+    private readonly ILogger<_TEMPLATE_Put> _logger;
+
+    public _TEMPLATE_Put(IDebtorService service, ILogger<_TEMPLATE_Put> logger)
+    {
+        _service = service;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// 🤖 AI: PUT endpoints update existing resources
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(DebtorDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Handle(Guid id, [FromBody] UpdateDebtorRequest request)
+    {
+        _logger.LogInformation("Updating debtor: {Id}", id);
+
+        // 🤖 AI: REPLACE THIS - Get current user from claims
+        // var currentUser = await GetCurrentUserAsync();
+        // if (currentUser == null) return Unauthorized();
+
+        // 🤖 AI: Call service to update
+        // var result = await _service.UpdateAsync(id, request, currentUser);
+        var result = Result<DebtorDto>.Failure("Template not implemented");
+
+        if (!result.IsSuccess)
+        {
+            _logger.LogWarning("Update debtor {Id} failed: {Error}", id, result.ErrorMessage);
+
+            // 🤖 AI: Return 404 if not found, 400 for validation
+            return result.ErrorMessage!.Contains("not found")
+                ? NotFound(new { error = result.ErrorMessage })
+                : BadRequest(new { error = result.ErrorMessage });
+        }
+
+        return Ok(result.Data);
+    }
+}

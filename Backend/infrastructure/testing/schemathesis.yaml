@@ -1,0 +1,29 @@
+# Schemathesis Configuration for Monetaris API
+
+# Base URL where API is running
+base_url: http://localhost:5000
+
+# Path to OpenAPI spec
+schema_path: /swagger/v1/swagger.json
+
+# Checks to perform
+checks:
+  - not_a_server_error        # No 500 errors
+  - status_code_conformance   # Status codes match OpenAPI spec
+  - content_type_conformance  # Content-Type headers correct
+  - response_schema_conformance # Response matches schema
+
+# Hypothesis settings for property-based testing
+hypothesis:
+  max_examples: 50              # Number of test cases per endpoint
+  phases: [generate, shrink]    # Test phases to run
+  deadline: 5000                # Max time per test (ms)
+
+# Workers for parallel execution
+workers: 4
+
+# Exit codes
+exitfirst: false                # Continue testing all endpoints even if one fails
+
+# Verbosity
+verbosity: 1                    # 0=quiet, 1=normal, 2=verbose

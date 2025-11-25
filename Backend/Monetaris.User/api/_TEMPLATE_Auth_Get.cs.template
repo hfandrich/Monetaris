@@ -1,0 +1,89 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Monetaris.Shared.Interfaces;
+using Monetaris.User.Models;
+
+namespace Monetaris.User.Api;
+
+/// <summary>
+/// 🤖 TEMPLATE for GET auth endpoints (Get current user, Get user profile)
+/// AI: Copy this file and modify only the marked sections
+/// </summary>
+[ApiController]
+[Route("api/auth")]
+public class _TEMPLATE_Auth_Get : ControllerBase
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<_TEMPLATE_Auth_Get> _logger;
+
+    // 🤖 AI: Constructor injection pattern - ALWAYS use this
+    public _TEMPLATE_Auth_Get(IApplicationDbContext context, ILogger<_TEMPLATE_Auth_Get> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// 🤖 AI: GET endpoints for retrieving user information
+    /// Examples: /me (current user), /profile (user profile)
+    /// </summary>
+    /// <returns>🤖 AI: Return UserDto or custom response type</returns>
+    [HttpGet("template-route")]  // 🤖 AI: Change route (e.g., "me", "profile")
+    [Authorize]  // 🤖 AI: Auth endpoints typically require authentication
+    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Handle()
+    {
+        // 🤖 AI: Extract user ID from JWT claims
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            _logger.LogWarning("Invalid or missing user ID claim in token");
+            return Unauthorized(new { error = "Invalid token" });
+        }
+
+        // 🤖 AI: Update log message to describe the operation
+        _logger.LogInformation("Template auth GET operation called for user: {UserId}", userId);
+
+        // 🤖 AI: Query database for user data
+        // Include related entities if needed (e.g., .Include(u => u.TenantAssignments))
+        var user = await _context.Users
+            .Include(u => u.TenantAssignments)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+        {
+            _logger.LogWarning("User not found: {UserId}", userId);
+            return NotFound(new { error = "User not found" });
+        }
+
+        // 🤖 AI: Map entity to DTO (exclude sensitive data like password hash)
+        var userDto = new UserDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Role = user.Role,
+            TenantId = user.TenantId,
+            AssignedTenantIds = user.TenantAssignments.Select(ta => ta.TenantId).ToList(),
+            AvatarInitials = user.AvatarInitials
+        };
+
+        _logger.LogInformation("Template auth GET operation successful for user: {UserId}", userId);
+        return Ok(userDto);
+    }
+}
+
+// 🤖 AI: SECURITY CHECKLIST
+// ✅ Always use [Authorize] for GET auth endpoints (requires valid JWT)
+// ✅ Extract user ID from ClaimTypes.NameIdentifier
+// ✅ Validate user ID claim is present and valid Guid
+// ✅ Return 401 if token is invalid
+// ✅ Return 404 if user not found in database
+// ❌ NEVER return sensitive data (password hash, refresh tokens)

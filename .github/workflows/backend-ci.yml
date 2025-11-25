@@ -1,0 +1,78 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monetaris_test
+          POSTGRES_USER: monetaris_user
+          POSTGRES_PASSWORD: monetaris_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones disabled for SonarQube
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore Dependencies
+      run: |
+        cd Backend
+        dotnet restore
+
+    - name: Build
+      run: |
+        cd Backend
+        dotnet build --no-restore --configuration Release
+
+    - name: Run Unit Tests
+      run: |
+        cd Backend
+        dotnet test --no-build --configuration Release \
+          --filter "Category=Unit" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults
+
+    - name: Run Integration Tests
+      run: |
+        cd Backend
+        dotnet test --no-build --configuration Release \
+          --filter "Category=Integration" \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=monetaris_test;Username=monetaris_user;Password=monetaris_pass"
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-test-results
+        path: Backend/TestResults/
+
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        directory: Backend/TestResults
+        flags: backend
+        name: backend-coverage

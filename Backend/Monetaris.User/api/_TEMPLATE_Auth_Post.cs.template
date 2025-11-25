@@ -1,0 +1,73 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Monetaris.User.Services;
+using Monetaris.User.Models;
+using Monetaris.Shared.Models;
+
+namespace Monetaris.User.Api;
+
+/// <summary>
+/// 🤖 TEMPLATE for POST auth endpoints (Login, Register, Logout, RefreshToken)
+/// AI: Copy this file and modify only the marked sections
+/// </summary>
+[ApiController]
+[Route("api/auth")]
+public class _TEMPLATE_Auth_Post : ControllerBase
+{
+    private readonly IAuthService _authService;
+    private readonly ILogger<_TEMPLATE_Auth_Post> _logger;
+
+    // 🤖 AI: Constructor injection pattern - ALWAYS use this
+    public _TEMPLATE_Auth_Post(IAuthService authService, ILogger<_TEMPLATE_Auth_Post> logger)
+    {
+        _authService = authService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// 🤖 AI: POST endpoints for authentication operations
+    /// Examples: login, register, logout, refresh-token, change-password
+    /// </summary>
+    /// <param name="request">🤖 AI: Replace with appropriate request type (LoginRequest, RegisterRequest, etc.)</param>
+    /// <returns>🤖 AI: Return AuthResponse for login/register/refresh, or NoContent for logout</returns>
+    [HttpPost("template-route")]  // 🤖 AI: Change route (e.g., "login", "register", "logout", "refresh")
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]  // 🤖 AI: Use 200 for login/register/refresh
+    // [ProducesResponseType(StatusCodes.Status204NoContent)]  // 🤖 AI: Use 204 for logout (uncomment if needed)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Handle([FromBody] LoginRequest request)  // 🤖 AI: Replace request type
+    {
+        // 🤖 AI: Update log message to describe the operation
+        _logger.LogInformation("Template auth operation called");
+
+        // 🤖 AI: Call appropriate auth service method
+        // Examples:
+        // - var result = await _authService.LoginAsync(request);
+        // - var result = await _authService.RegisterAsync(request);
+        // - var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+        // - var result = await _authService.LogoutAsync(request.RefreshToken);
+        var result = Result<AuthResponse>.Failure("Template not implemented");
+
+        // 🤖 AI: ALWAYS use Result<T> pattern - DO NOT change this
+        if (!result.IsSuccess)
+        {
+            _logger.LogWarning("Template auth operation failed: {Error}", result.ErrorMessage);
+            return BadRequest(new { error = result.ErrorMessage });
+        }
+
+        // 🤖 AI: For logout (returns Result without data), use:
+        // _logger.LogInformation("Logout successful");
+        // return NoContent();
+
+        // 🤖 AI: For login/register/refresh (returns Result<AuthResponse>), use:
+        _logger.LogInformation("Template auth operation successful");
+        return Ok(result.Data);
+    }
+}
+
+// 🤖 AI: SECURITY CHECKLIST
+// ❌ NEVER log passwords or tokens
+// ✅ Use generic error messages (don't reveal if email exists)
+// ✅ Add [Authorize] only if endpoint requires authentication (e.g., logout, change-password)
+// ✅ Use _logger.LogWarning for failed authentication attempts
+// ✅ Include user ID in logs for authenticated endpoints

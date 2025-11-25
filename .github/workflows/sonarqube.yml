@@ -1,0 +1,52 @@
+name: SonarQube Quality Gate
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones disabled for SonarQube
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install SonarScanner
+      run: |
+        dotnet tool install --global dotnet-sonarscanner
+
+    - name: Build and Analyze Backend
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      run: |
+        cd Backend
+        dotnet-sonarscanner begin \
+          /k:"monetaris-backend" \
+          /d:sonar.token="${SONAR_TOKEN}" \
+          /d:sonar.host.url="${SONAR_HOST_URL}" \
+          /d:sonar.cs.vscoveragexml.reportsPaths="**/TestResults/**/coverage.cobertura.xml"
+
+        dotnet build --configuration Release
+
+        dotnet test --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults
+
+        dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+
+    - name: SonarQube Quality Gate Check
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      with:
+        scanMetadataReportFile: Backend/.sonarqube/out/.sonar/report-task.txt

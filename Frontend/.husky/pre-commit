@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+cd Frontend
+
+# Format code
+npm run format
+
+# Lint code
+npm run lint
+
+# Stage formatted files
+git add -A

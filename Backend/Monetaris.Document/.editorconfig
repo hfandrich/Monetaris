@@ -1,0 +1,9 @@
+root = false
+
+[*.cs]
+# Max line length
+max_line_length = 150
+
+# File size limits
+# Each endpoint file: max 150 lines
+# Each service file: max 300 lines

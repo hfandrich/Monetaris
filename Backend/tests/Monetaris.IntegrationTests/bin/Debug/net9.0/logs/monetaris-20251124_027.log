@@ -1,0 +1,43 @@
+2025-11-24 22:36:06.004 +01:00 [INF] Starting Monetaris API
+2025-11-24 22:36:06.194 +01:00 [INF] Monetaris API started successfully
+2025-11-24 22:36:06.711 +01:00 [INF] Starting database seeding...
+2025-11-24 22:36:06.785 +01:00 [INF] Seeded 5 tenants
+2025-11-24 22:36:07.701 +01:00 [INF] Seeded 7 users
+2025-11-24 22:36:07.715 +01:00 [INF] Seeded 11 user-tenant assignments
+2025-11-24 22:36:07.753 +01:00 [INF] Seeded sample debtor: Max Muster
+2025-11-24 22:36:07.790 +01:00 [INF] Seeded sample case: RE-PORTAL-TEST
+2025-11-24 22:36:07.811 +01:00 [INF] Seeded 5 templates
+2025-11-24 22:36:07.811 +01:00 [INF] Database seeding completed successfully!
+2025-11-24 22:36:07.860 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-11-24 22:36:07.903 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-24 22:36:07.968 +01:00 [WRN] Login failed for email: admin@monetaris.com. Error: Invalid email or password
+2025-11-24 22:36:07.977 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 120.9689 ms
+2025-11-24 22:36:08.009 +01:00 [INF] Login attempt for email: nonexistent@example.com
+2025-11-24 22:36:08.030 +01:00 [WRN] Login failed for email: nonexistent@example.com. Error: Invalid email or password
+2025-11-24 22:36:08.031 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 24.5649 ms
+2025-11-24 22:36:08.040 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-24 22:36:08.041 +01:00 [WRN] Login failed for email: admin@monetaris.com. Error: Invalid email or password
+2025-11-24 22:36:08.041 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 3.7208 ms
+2025-11-24 22:36:08.044 +01:00 [INF] Login attempt for email: client@techsolutions.de
+2025-11-24 22:36:08.045 +01:00 [WRN] Login failed for email: client@techsolutions.de. Error: Invalid email or password
+2025-11-24 22:36:08.045 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 1.5022 ms
+2025-11-24 22:36:08.048 +01:00 [INF] Login attempt for email: 
+2025-11-24 22:36:08.048 +01:00 [WRN] Login failed for email: . Error: Invalid email or password
+2025-11-24 22:36:08.049 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 1.1641 ms
+2025-11-24 22:36:08.051 +01:00 [INF] Login attempt for email: max@monetaris.com
+2025-11-24 22:36:08.051 +01:00 [WRN] Login failed for email: max@monetaris.com. Error: Invalid email or password
+2025-11-24 22:36:08.051 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 1.0173 ms
+2025-11-24 22:36:21.210 +01:00 [INF] Starting Monetaris API
+2025-11-24 22:36:21.401 +01:00 [INF] Monetaris API started successfully
+2025-11-24 22:36:21.834 +01:00 [INF] Starting database seeding...
+2025-11-24 22:36:21.913 +01:00 [INF] Seeded 5 tenants
+2025-11-24 22:36:22.812 +01:00 [INF] Seeded 7 users
+2025-11-24 22:36:22.828 +01:00 [INF] Seeded 11 user-tenant assignments
+2025-11-24 22:36:22.877 +01:00 [INF] Seeded sample debtor: Max Muster
+2025-11-24 22:36:22.913 +01:00 [INF] Seeded sample case: RE-PORTAL-TEST
+2025-11-24 22:36:22.932 +01:00 [INF] Seeded 5 templates
+2025-11-24 22:36:22.933 +01:00 [INF] Database seeding completed successfully!
+2025-11-24 22:36:22.980 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-11-24 22:36:23.024 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-24 22:36:23.089 +01:00 [WRN] Login failed for email: admin@monetaris.com. Error: Invalid email or password
+2025-11-24 22:36:23.097 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 121.8089 ms

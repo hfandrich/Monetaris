@@ -1,0 +1,46 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {},
+      "description": "Playwright MCP - Browser automation and testing"
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION": "Host=localhost;Port=5432;Database=monetaris;Username=monetaris_user;Password=monetaris_pass"
+      },
+      "description": "PostgreSQL MCP - Direct database queries for AI"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\fandrich\\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\\Mieterverwaltung\\Mahnwesen\\Monetaris"
+      ],
+      "description": "Filesystem MCP - Codebase navigation without reading all files"
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "C:\\Users\\fandrich\\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\\Mieterverwaltung\\Mahnwesen\\Monetaris"
+      ],
+      "description": "Git MCP - Version control operations"
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Memory MCP - Session state persistence for AI"
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Sequential Thinking MCP - Step-by-step planning for complex tasks"
+    }
+  }
+}

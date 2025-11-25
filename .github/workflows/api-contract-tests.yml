@@ -1,0 +1,52 @@
+name: API Contract Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  schemathesis:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: monetaris
+          POSTGRES_USER: monetaris_user
+          POSTGRES_PASSWORD: monetaris_pass
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Schemathesis
+      run: pip install schemathesis
+
+    - name: Start Backend API
+      run: |
+        cd Backend/MonetarisApi
+        dotnet restore
+        dotnet build
+        nohup dotnet run --no-build &
+        sleep 30
+      env:
+        ASPNETCORE_URLS: http://localhost:5000
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=monetaris;Username=monetaris_user;Password=monetaris_pass"
+
+    - name: Run Schemathesis Tests
+      run: |
+        cd Backend/infrastructure/testing
+        chmod +x run-contract-tests.sh
+        ./run-contract-tests.sh

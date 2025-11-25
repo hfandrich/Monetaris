@@ -1,0 +1,6 @@
+@MonetarisApi_HostAddress = http://localhost:5033
+
+GET {{MonetarisApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

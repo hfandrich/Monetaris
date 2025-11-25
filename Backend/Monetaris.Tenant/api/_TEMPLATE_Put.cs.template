@@ -1,0 +1,90 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Monetaris.Kreditor.Services;
+using Monetaris.Kreditor.Models;
+using Monetaris.Shared.Models;
+using Monetaris.Shared.Models.Entities;
+using Monetaris.Shared.Interfaces;
+using System.Security.Claims;
+
+namespace Monetaris.Kreditor.Api;
+
+/// <summary>
+/// [DESCRIBE WHAT THIS ENDPOINT UPDATES]
+/// Example: Updates contact information for a Kreditor
+/// </summary>
+[ApiController]
+[Route("api/[ROUTE]")]
+[Authorize]  // Add specific roles if needed: [Authorize(Roles = "ADMIN")]
+public class [ENDPOINT_NAME] : ControllerBase
+{
+    private readonly I[DOMAIN]Service _service;
+    private readonly IApplicationDbContext _context;
+    private readonly ILogger<[ENDPOINT_NAME]> _logger;
+
+    public [ENDPOINT_NAME](
+        I[DOMAIN]Service service,
+        IApplicationDbContext context,
+        ILogger<[ENDPOINT_NAME]> logger)
+    {
+        _service = service;
+        _context = context;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// [DETAILED ENDPOINT DESCRIPTION]
+    /// Example: Update the contact email and phone for a Kreditor
+    /// </summary>
+    /// <param name="id">[ID PARAMETER DESCRIPTION]</param>
+    /// <param name="request">[REQUEST DESCRIPTION]</param>
+    /// <returns>[RESPONSE TYPE DESCRIPTION]</returns>
+    [HttpPut("{id}")]  // Or [HttpPut("{parentId}/[resource]/{id}")] for nested
+    [ProducesResponseType(typeof([RESPONSE_TYPE]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Handle(Guid id, [FromBody] [REQUEST_TYPE] request)
+    {
+        _logger.LogInformation("Updating [resource] {Id}", id);
+
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            _logger.LogWarning("Unauthorized access attempt to [ENDPOINT_NAME]");
+            return Unauthorized();
+        }
+
+        var result = await _service.[METHOD_NAME]Async(id, request, currentUser);
+
+        if (!result.IsSuccess)
+        {
+            if (result.ErrorMessage == "[NOT_FOUND_MESSAGE]")
+            {
+                _logger.LogWarning("[Resource] {Id} not found for update", id);
+                return NotFound(new { error = result.ErrorMessage });
+            }
+
+            _logger.LogWarning("Failed to update [resource] {Id}: {Error}",
+                id, result.ErrorMessage);
+            return BadRequest(new { error = result.ErrorMessage });
+        }
+
+        _logger.LogInformation("Successfully updated [resource] {Id} by user {UserId}",
+            id, currentUser.Id);
+
+        return Ok(result.Data);
+    }
+
+    private async Task<User?> GetCurrentUserAsync()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return null;
+        }
+
+        return await _context.Users.FindAsync(userId);
+    }
+}
