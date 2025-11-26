@@ -28,7 +28,7 @@ import {
   CaseStatus,
   UserRole,
 } from '../types';
-import { dataService } from '../services/dataService';
+import { tenantsApi, debtorsApi, casesApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
 import { GoogleGenAI } from '@google/genai';
 
@@ -252,12 +252,19 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
 
       if (type === 'CLAIM') {
         const fetchData = async () => {
-          const [tenants, debtors] = await Promise.all([
-            dataService.getTenants(),
-            dataService.getDebtors(),
-          ]);
-          setAvailableTenants(tenants);
-          setAvailableDebtors(debtors);
+          try {
+            const [tenantsResult, debtorsResult] = await Promise.all([
+              tenantsApi.getAll(),
+              debtorsApi.getAll(),
+            ]);
+            // Extract data arrays from paginated responses
+            setAvailableTenants(tenantsResult?.data || []);
+            setAvailableDebtors(debtorsResult?.data || []);
+          } catch (err) {
+            console.error('Error loading wizard data:', err);
+            setAvailableTenants([]);
+            setAvailableDebtors([]);
+          }
         };
         fetchData();
       }
@@ -528,12 +535,12 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
           notes: formData.notes,
         };
 
-        // Save debtor
-        await dataService.addDebtor(newDebtor);
+        // Save debtor via API
+        const createdDebtor = await debtorsApi.create(newDebtor);
 
         // Update state to select this new debtor and exit creation mode
-        setAvailableDebtors((prev) => [newDebtor, ...prev]);
-        setFormData((prev) => ({ ...prev, debtorId: newDebtor.id }));
+        setAvailableDebtors((prev) => [createdDebtor || newDebtor, ...prev]);
+        setFormData((prev) => ({ ...prev, debtorId: createdDebtor?.id || newDebtor.id }));
         setIsCreatingDebtor(false);
         setLoading(false);
         setStep(2); // Move to next step directly
@@ -573,7 +580,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
           openCases: 0,
           notes: formData.notes,
         };
-        await dataService.addDebtor(newDebtor);
+        await debtorsApi.create(newDebtor);
       } else if (type === 'CLIENT') {
         const newTenant: Tenant = {
           id: `t-${Date.now()}`,
@@ -582,7 +589,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
           contactEmail: formData.email,
           bankAccountIBAN: formData.iban,
         };
-        await dataService.addTenant(newTenant);
+        await tenantsApi.create(newTenant);
       } else if (type === 'CLAIM') {
         const selectedDebtor = availableDebtors.find((d) => d.id === formData.debtorId);
         const selectedTenant = availableTenants.find((t) => t.id === formData.tenantId);
@@ -607,7 +614,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
           history: [],
           aiAnalysis: 'Initial Assessment Pending',
         };
-        await dataService.addCase(newCase);
+        await casesApi.create(newCase);
       }
 
       setLoading(false);

@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader, Card, Badge, Button, CreationWizard, SearchableSelect } from '../components/UI';
 import { ClaimDetailModal } from '../components/ClaimDetailModal';
-import { dataService } from '../services/dataService';
+import { casesApi, tenantsApi, debtorsApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
 import { CollectionCase, CaseStatus, UserRole, Tenant, Debtor } from '../types';
 import { Download, MoreVertical, Scale, Search, Send, Phone, Gavel, Archive, Mail, DollarSign, FileText, Plus, AlertCircle, LayoutGrid, List, Calendar, Filter, X, Building2, Users, Check, Smartphone, MapPin, Clock, ArrowRight, RotateCw, User, Globe } from 'lucide-react';
@@ -17,6 +17,7 @@ export const Claims: React.FC = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
@@ -49,39 +50,57 @@ export const Claims: React.FC = () => {
   // --- Load Data & Params ---
   const loadCases = async () => {
     setLoading(true);
-    const { user } = authService.checkSession();
-    if (!user) return;
+    setError(null);
 
-    setUserRole(user.role);
-    setCurrentUserId(user.id);
+    try {
+      const { user } = authService.checkSession();
+      if (!user) return;
 
-    // Fetch data using scoped methods based on user role
-    const [caseData, tenantData, debtorData] = await Promise.all([
-        dataService.getAccessibleCases(user),
-        dataService.getAccessibleTenants(user),
-        dataService.getAccessibleDebtors(user)
-    ]);
-    
-    // Sort by urgency/date
-    caseData.sort((a,b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+      setUserRole(user.role);
+      setCurrentUserId(user.id);
 
-    setCases(caseData);
-    setTenants(tenantData);
-    setDebtors(debtorData);
-    
-    const paramTenant = searchParams.get('tenantId');
-    const paramDebtor = searchParams.get('debtorId');
-    const paramView = searchParams.get('view');
+      // Fetch data using API client with pagination
+      // Use Promise.allSettled to handle partial failures gracefully
+      const [caseResult, tenantResult, debtorResult] = await Promise.allSettled([
+        casesApi.getAll({ page: 1, pageSize: 1000 }),
+        tenantsApi.getAll({ page: 1, pageSize: 1000 }),
+        debtorsApi.getAll({ page: 1, pageSize: 1000 })
+      ]);
 
-    if (paramTenant) setSelectedTenantId(paramTenant);
-    if (paramDebtor) setSelectedDebtorId(paramDebtor);
-    if (paramView === 'BOARD') setViewMode('BOARD');
-    
-    if (!paramView && window.innerWidth < 768) {
+      // Extract data from paginated responses, using empty arrays as fallback
+      const caseData = caseResult.status === 'fulfilled' ? (caseResult.value.data || []) : [];
+      const tenantData = tenantResult.status === 'fulfilled' ? (tenantResult.value.data || []) : [];
+      const debtorData = debtorResult.status === 'fulfilled' ? (debtorResult.value.data || []) : [];
+
+      // Log any failed requests for debugging
+      if (caseResult.status === 'rejected') console.warn('Failed to load cases:', caseResult.reason);
+      if (tenantResult.status === 'rejected') console.warn('Failed to load tenants:', tenantResult.reason);
+      if (debtorResult.status === 'rejected') console.warn('Failed to load debtors:', debtorResult.reason);
+
+      // Sort by urgency/date
+      caseData.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+      setCases(caseData);
+      setTenants(tenantData);
+      setDebtors(debtorData);
+
+      const paramTenant = searchParams.get('tenantId');
+      const paramDebtor = searchParams.get('debtorId');
+      const paramView = searchParams.get('view');
+
+      if (paramTenant) setSelectedTenantId(paramTenant);
+      if (paramDebtor) setSelectedDebtorId(paramDebtor);
+      if (paramView === 'BOARD') setViewMode('BOARD');
+
+      if (!paramView && window.innerWidth < 768) {
         setViewMode('FIELD_AGENT');
+      }
+    } catch (err: any) {
+      console.error('Error loading cases:', err);
+      setError(err.message || 'Fehler beim Laden der Daten');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -142,6 +161,7 @@ export const Claims: React.FC = () => {
 
   // --- Workflow Actions ---
   const handleNextStep = async (c: CollectionCase) => {
+    try {
       let nextStatus = c.status;
       let note = "Triggered manually";
 
@@ -150,9 +170,13 @@ export const Claims: React.FC = () => {
       else if (c.status === CaseStatus.MB_REQUESTED) nextStatus = CaseStatus.MB_ISSUED;
       else if (c.status === CaseStatus.MB_ISSUED) nextStatus = CaseStatus.PREPARE_VB;
       else if (c.status === CaseStatus.PREPARE_VB) nextStatus = CaseStatus.VB_REQUESTED;
-      
-      await dataService.advanceWorkflow(c.id, nextStatus, note, isAgentOrAdmin ? "Agent" : "Client");
+
+      await casesApi.advanceWorkflow(c.id, nextStatus, note);
       loadCases();
+    } catch (err: any) {
+      console.error('Error advancing workflow:', err);
+      alert(err.message || 'Fehler beim Fortschreiten des Workflows');
+    }
   };
 
   const onDragStart = (e: React.DragEvent, caseId: string) => {
@@ -166,18 +190,26 @@ export const Claims: React.FC = () => {
   };
 
   const onDrop = async (e: React.DragEvent, targetStatus: CaseStatus) => {
-      e.preventDefault();
-      const caseId = e.dataTransfer.getData("caseId");
-      if (!caseId) return;
+    e.preventDefault();
+    const caseId = e.dataTransfer.getData("caseId");
+    if (!caseId) return;
 
-      const currentCase = cases.find(c => c.id === caseId);
-      if (!currentCase || currentCase.status === targetStatus) return;
+    const currentCase = cases.find(c => c.id === caseId);
+    if (!currentCase || currentCase.status === targetStatus) return;
 
-      const updatedCases = cases.map(c => c.id === caseId ? { ...c, status: targetStatus } : c);
-      setCases(updatedCases);
+    // Optimistic update
+    const updatedCases = cases.map(c => c.id === caseId ? { ...c, status: targetStatus } : c);
+    setCases(updatedCases);
 
-      await dataService.advanceWorkflow(caseId, targetStatus, "Verschoben via Kanban Board", userRole === UserRole.AGENT ? "Agent" : "Client");
-      loadCases(); 
+    try {
+      await casesApi.advanceWorkflow(caseId, targetStatus, "Verschoben via Kanban Board");
+      loadCases();
+    } catch (err: any) {
+      console.error('Error updating workflow via drag:', err);
+      // Revert optimistic update on error
+      setCases(cases);
+      alert(err.message || 'Fehler beim Aktualisieren des Status');
+    }
   };
 
   const handleAgentAction = async (action: 'LATER' | 'DONE') => {
@@ -352,7 +384,23 @@ export const Claims: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 pb-20 relative" onClick={() => setMenuOpenId(null)}>
-      <PageHeader 
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0" size={20} />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-red-900 dark:text-red-200">{error}</p>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      <PageHeader
         title="Forderungen"
         subtitle={`${filteredCases.length} aktive Verfahren in Bearbeitung`}
         action={
@@ -392,35 +440,60 @@ export const Claims: React.FC = () => {
               </div>
               
               <div className="w-full xl:w-64">
-                  <SearchableSelect 
+                  <SearchableSelect
                         placeholder="Mandant wählen..."
                         options={tenants.map(t => ({ id: t.id, title: t.name, subtitle: t.registrationNumber }))}
                         value={selectedTenantId}
                         onChange={setSelectedTenantId}
                         icon={Building2}
+                        clearable
                   />
               </div>
 
               <div className="w-full xl:w-64">
-                  <SearchableSelect 
+                  <SearchableSelect
                         placeholder="Schuldner suchen..."
-                        options={debtors.map(d => ({ id: d.id, title: d.companyName || `${d.lastName}, ${d.firstName}`, subtitle: `${d.address.city} • ID: ${d.id}` }))}
+                        options={debtors.map(d => ({ id: d.id, title: d.companyName || `${d.lastName}, ${d.firstName}`, subtitle: `${d.address?.city || 'Unbekannt'} • ID: ${d.id}` }))}
                         value={selectedDebtorId}
                         onChange={setSelectedDebtorId}
                         icon={Users}
+                        clearable
                   />
               </div>
 
               <div className="w-full xl:w-64 relative">
-                  <input 
+                  <input
                     type="text"
                     placeholder="Rechnungsnummer..."
-                    className="w-full p-2.5 pl-9 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-monetaris-500/20 outline-none"
+                    className="w-full p-2.5 pl-9 pr-8 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-monetaris-500/20 outline-none"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                      title="Suche löschen"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
               </div>
+
+              {/* Clear All Filters Button */}
+              {(selectedTenantId || selectedDebtorId || searchTerm) && (
+                <button
+                  onClick={() => {
+                    setSelectedTenantId('');
+                    setSelectedDebtorId('');
+                    setSearchTerm('');
+                  }}
+                  className="hidden xl:flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
+                >
+                  <X size={14} /> Filter zurücksetzen
+                </button>
+              )}
 
               <div className="flex ml-auto bg-slate-100 dark:bg-white/5 p-1 rounded-xl shrink-0 overflow-x-auto max-w-full">
                 <button onClick={() => setViewMode('TABLE')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'TABLE' ? 'bg-white dark:bg-[#202020] text-black dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}><List size={14} /> Liste</button>
