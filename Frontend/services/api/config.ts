@@ -10,8 +10,9 @@ export const API_ENDPOINTS = {
     LOGOUT: `${API_BASE_URL}/auth/logout`,
     ME: `${API_BASE_URL}/auth/me`,
   },
-  // Tenants
-  TENANTS: `${API_BASE_URL}/tenants`,
+  // Kreditoren (Mandanten)
+  TENANTS: `${API_BASE_URL}/kreditoren`,
+  KREDITOREN: `${API_BASE_URL}/kreditoren`,
   // Debtors
   DEBTORS: `${API_BASE_URL}/debtors`,
   // Cases
@@ -24,8 +25,10 @@ export const API_ENDPOINTS = {
   TEMPLATES: `${API_BASE_URL}/templates`,
   // Dashboard
   DASHBOARD: {
-    STATS: `${API_BASE_URL}/dashboard/stats`,
+    STATS: `${API_BASE_URL}/dashboard/statistics`,
     FINANCIAL: `${API_BASE_URL}/dashboard/financial`,
+    RECENT_ACTIVITY: `${API_BASE_URL}/dashboard/recent-activity`,
+    SEARCH: `${API_BASE_URL}/dashboard/search`,
   },
   SEARCH: `${API_BASE_URL}/search`,
 };

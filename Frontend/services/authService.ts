@@ -3,11 +3,35 @@ import { User, AuthState, UserRole } from '../types';
 import { API_ENDPOINTS } from './api/config';
 import { HttpClient } from './api/httpClient';
 
+// Backend returns numeric role values, frontend uses string enum
+const USER_ROLE_MAP: Record<number, UserRole> = {
+  0: UserRole.ADMIN,
+  1: UserRole.AGENT,
+  2: UserRole.CLIENT,
+  3: UserRole.DEBTOR,
+};
+
+interface BackendUser {
+  id: string;
+  email: string;
+  name: string;
+  role: number; // Backend returns numeric
+  tenantId?: string;
+}
+
 interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  user: User;
+  user: BackendUser;
+}
+
+// Transform backend user to frontend user
+function transformUser(backendUser: BackendUser): User {
+  return {
+    ...backendUser,
+    role: USER_ROLE_MAP[backendUser.role] ?? UserRole.DEBTOR,
+  } as User;
 }
 
 export const authService = {
@@ -19,13 +43,16 @@ export const authService = {
         password,
       });
 
+      // Transform user role from numeric to string enum
+      const user = transformUser(response.user);
+
       // Store tokens
       localStorage.setItem('monetaris_token', response.accessToken);
       localStorage.setItem('monetaris_refresh_token', response.refreshToken);
-      localStorage.setItem('monetaris_user', JSON.stringify(response.user));
+      localStorage.setItem('monetaris_user', JSON.stringify(user));
 
       return {
-        user: response.user,
+        user,
         isAuthenticated: true,
         token: response.accessToken,
       };
@@ -42,12 +69,15 @@ export const authService = {
         zipCode,
       });
 
+      // Transform user role from numeric to string enum
+      const user = transformUser(response.user);
+
       localStorage.setItem('monetaris_token', response.accessToken);
       localStorage.setItem('monetaris_refresh_token', response.refreshToken);
-      localStorage.setItem('monetaris_user', JSON.stringify(response.user));
+      localStorage.setItem('monetaris_user', JSON.stringify(user));
 
       return {
-        user: response.user,
+        user,
         isAuthenticated: true,
         token: response.accessToken,
       };
