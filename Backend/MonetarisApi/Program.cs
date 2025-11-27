@@ -1,6 +1,8 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -14,16 +16,26 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 // =============================================
 // Configure Serilog
 // =============================================
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json")
-        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
-        .Build())
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true)
+    .AddEnvironmentVariables()
+    .Build();
+
+var seqUrl = configuration.GetValue<string>("Serilog:WriteTo:1:Args:serverUrl") ?? "";
+
+var loggerConfig = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.File("logs/monetaris-.log", rollingInterval: RollingInterval.Day)
-    .WriteTo.Seq("http://localhost:5341")
-    .CreateLogger();
+    .WriteTo.File("logs/monetaris-.log", rollingInterval: RollingInterval.Day);
+
+if (!string.IsNullOrWhiteSpace(seqUrl))
+{
+    loggerConfig.WriteTo.Seq(seqUrl);
+}
+
+Log.Logger = loggerConfig.CreateLogger();
 
 try
 {
@@ -41,9 +53,25 @@ try
     // Configure Database (conditional for testing)
     if (builder.Environment.EnvironmentName != "Testing")
     {
+        // Build connection string - only add password if not already in connection string
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+        // Only append password from env var if connection string doesn't already have one
+        if (!connectionString!.Contains("Password=", StringComparison.OrdinalIgnoreCase))
+        {
+            var dbPassword = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "monetaris_pass";
+            connectionString += $";Password={dbPassword}";
+        }
+
         // Use PostgreSQL for production and development
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        {
+            options.UseNpgsql(connectionString)
+                .UseSnakeCaseNamingConvention(); // Map C# PascalCase to PostgreSQL snake_case
+            // Suppress pending model changes warning for development (EF Core 9)
+            options.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        });
 
         // Register IApplicationDbContext interface
         builder.Services.AddScoped<IApplicationDbContext>(provider =>
@@ -60,16 +88,19 @@ try
                 ?? new[] { "http://localhost:3000" };
 
             policy.WithOrigins(allowedOrigins)
-                .AllowAnyMethod()
-                .AllowAnyHeader()
+                .WithMethods("GET", "POST", "PUT", "DELETE")
+                .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-CSRF-TOKEN")
                 .AllowCredentials();
         });
     });
 
     // Configure JWT Authentication
     var jwtSettings = builder.Configuration.GetSection("Jwt");
-    var secretKey = jwtSettings["SecretKey"]
-        ?? throw new InvalidOperationException("JWT SecretKey is missing from configuration");
+    var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+        ?? jwtSettings["SecretKey"]
+        ?? (builder.Environment.IsDevelopment()
+            ? "DEV_SECRET_KEY_FOR_DEVELOPMENT_ONLY_DO_NOT_USE_IN_PRODUCTION_32_CHARS"
+            : throw new InvalidOperationException("JWT SecretKey must be provided via JWT_SECRET_KEY environment variable"));
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -88,6 +119,43 @@ try
         });
 
     builder.Services.AddAuthorization();
+
+    // Configure Antiforgery (CSRF Protection)
+    builder.Services.AddAntiforgery(options =>
+    {
+        options.HeaderName = "X-CSRF-TOKEN";
+        options.Cookie.Name = "CSRF-TOKEN";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+    });
+
+    // Configure Rate Limiting
+    // In development/testing, use higher limits to allow automated tests
+    var isDevelopment = builder.Environment.IsDevelopment();
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        // Fixed window rate limiter for authentication endpoints
+        options.AddFixedWindowLimiter("auth", limiterOptions =>
+        {
+            // Higher limit in development for automated testing
+            limiterOptions.PermitLimit = isDevelopment ? 100 : 5;
+            limiterOptions.Window = TimeSpan.FromMinutes(1);
+            limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiterOptions.QueueLimit = 0; // No queueing, reject immediately
+        });
+    });
+
+    // Register HTTP Client for external API calls
+    builder.Services.AddHttpClient();
+    builder.Services.AddHttpContextAccessor();
+
+    // Add Memory Cache for rate limiting
+    builder.Services.AddMemoryCache();
 
     // Register authentication services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -111,8 +179,21 @@ try
     builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Template.Validators.CreateTemplateRequestValidator>();
     builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Case.Validators.CreateCaseRequestValidator>();
 
-    // Add controllers
-    builder.Services.AddControllers();
+    // Configure HSTS
+    builder.Services.AddHsts(options =>
+    {
+        options.Preload = true;
+        options.IncludeSubDomains = true;
+        options.MaxAge = TimeSpan.FromDays(365);
+    });
+
+    // Add controllers with camelCase JSON serialization
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            options.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        });
 
     // Configure Swagger/OpenAPI
     builder.Services.AddEndpointsApiExplorer();
@@ -176,7 +257,9 @@ try
                 // Seed database
                 var seeder = new DatabaseSeeder(
                     dbContext,
-                    scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>()
+                    scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>(),
+                    app.Environment,
+                    builder.Configuration
                 );
                 await seeder.SeedAsync();
             }
@@ -198,8 +281,9 @@ try
     // Serilog request logging
     app.UseSerilogRequestLogging();
 
-    // Swagger in development
-    if (app.Environment.IsDevelopment())
+    // Swagger (only if explicitly enabled in configuration)
+    if (app.Environment.IsDevelopment()
+        && builder.Configuration.GetValue<bool>("EnableSwagger", false))
     {
         app.UseSwagger();
         app.UseSwaggerUI(options =>
@@ -210,6 +294,25 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    // HSTS - Strict Transport Security
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+
+    // Security Headers Middleware
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        await next();
+    });
+
+    // Rate Limiting (must be before authentication)
+    app.UseRateLimiter();
 
     // CORS middleware
     app.UseCors("FrontendPolicy");
