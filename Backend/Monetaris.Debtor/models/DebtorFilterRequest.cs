@@ -7,10 +7,15 @@ namespace Monetaris.Debtor.Models;
 /// </summary>
 public class DebtorFilterRequest
 {
-    public Guid? TenantId { get; set; }
+    public Guid? KreditorId { get; set; }
     public Guid? AgentId { get; set; }
     public RiskScore? RiskScore { get; set; }
     public string? SearchQuery { get; set; }
+    /// <summary>
+    /// Filter by exact email address (case-insensitive)
+    /// Used by debtor portal to find debtor record
+    /// </summary>
+    public string? Email { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }

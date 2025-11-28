@@ -27,7 +27,7 @@ public class DebtorService : IDebtorService
         try
         {
             IQueryable<Shared.Models.Entities.Debtor> query = _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .Include(d => d.Agent)
                 .Include(d => d.Cases);
 
@@ -35,9 +35,9 @@ public class DebtorService : IDebtorService
             query = ApplyRoleBasedFiltering(query, currentUser);
 
             // Apply filters
-            if (filters.TenantId.HasValue)
+            if (filters.KreditorId.HasValue)
             {
-                query = query.Where(d => d.TenantId == filters.TenantId.Value);
+                query = query.Where(d => d.KreditorId == filters.KreditorId.Value);
             }
 
             if (filters.AgentId.HasValue)
@@ -59,6 +59,13 @@ public class DebtorService : IDebtorService
                     (d.FirstName != null && d.FirstName.ToLower().Contains(searchLower)) ||
                     (d.LastName != null && d.LastName.ToLower().Contains(searchLower)) ||
                     (d.Email != null && d.Email.ToLower().Contains(searchLower)));
+            }
+
+            // Exact email filter (for debtor portal lookup)
+            if (!string.IsNullOrWhiteSpace(filters.Email))
+            {
+                var emailLower = filters.Email.ToLower();
+                query = query.Where(d => d.Email != null && d.Email.ToLower() == emailLower);
             }
 
             // Get total count
@@ -98,7 +105,7 @@ public class DebtorService : IDebtorService
         try
         {
             var debtor = await _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .Include(d => d.Agent)
                 .Include(d => d.Cases)
                 .FirstOrDefaultAsync(d => d.Id == id);
@@ -157,7 +164,7 @@ public class DebtorService : IDebtorService
             var searchDtos = debtors.Select(d => new DebtorSearchDto
             {
                 Id = d.Id,
-                IsCompany = d.IsCompany,
+                EntityType = d.EntityType,
                 CompanyName = d.CompanyName,
                 FirstName = d.FirstName,
                 LastName = d.LastName,
@@ -183,16 +190,16 @@ public class DebtorService : IDebtorService
     {
         try
         {
-            // Verify tenant exists and user has access
-            var tenant = await _context.Tenants.FindAsync(request.TenantId);
-            if (tenant == null)
+            // Verify kreditor exists and user has access
+            var kreditor = await _context.Kreditoren.FindAsync(request.KreditorId);
+            if (kreditor == null)
             {
-                return Result<DebtorDto>.Failure("Tenant not found");
+                return Result<DebtorDto>.Failure("Kreditor not found");
             }
 
-            if (!await HasAccessToTenant(request.TenantId, currentUser))
+            if (!await HasAccessToKreditor(request.KreditorId, currentUser))
             {
-                return Result<DebtorDto>.Failure("Access denied to this tenant");
+                return Result<DebtorDto>.Failure("Access denied to this kreditor");
             }
 
             // Verify agent if specified
@@ -207,19 +214,45 @@ public class DebtorService : IDebtorService
 
             var debtor = new Shared.Models.Entities.Debtor
             {
-                TenantId = request.TenantId,
+                KreditorId = request.KreditorId,
                 AgentId = request.AgentId,
-                IsCompany = request.IsCompany,
+                EntityType = request.EntityType,
                 CompanyName = request.CompanyName,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
+                BirthName = request.BirthName,
+                Gender = request.Gender,
+                DateOfBirth = request.DateOfBirth,
+                BirthPlace = request.BirthPlace,
+                BirthCountry = request.BirthCountry,
                 Email = request.Email,
-                Phone = request.Phone,
                 Street = request.Street,
+                HouseNumber = request.HouseNumber,
                 ZipCode = request.ZipCode,
                 City = request.City,
+                CityDistrict = request.CityDistrict,
+                Floor = request.Floor,
+                DoorPosition = request.DoorPosition,
+                AdditionalAddressInfo = request.AdditionalAddressInfo,
+                POBox = request.POBox,
+                POBoxZipCode = request.POBoxZipCode,
                 Country = request.Country,
                 AddressStatus = request.AddressStatus,
+                RepresentedBy = request.RepresentedBy,
+                IsDeceased = request.IsDeceased,
+                PlaceOfDeath = request.PlaceOfDeath,
+                PhoneLandline = request.PhoneLandline,
+                PhoneMobile = request.PhoneMobile,
+                Fax = request.Fax,
+                EboAddress = request.EboAddress,
+                BankIBAN = request.BankIBAN,
+                BankBIC = request.BankBIC,
+                BankName = request.BankName,
+                RegisterCourt = request.RegisterCourt,
+                RegisterNumber = request.RegisterNumber,
+                VatId = request.VatId,
+                Partners = request.Partners,
+                FileReference = request.FileReference,
                 RiskScore = request.RiskScore,
                 Notes = request.Notes,
                 TotalDebt = 0,
@@ -231,7 +264,7 @@ public class DebtorService : IDebtorService
 
             // Reload with navigation properties
             debtor = await _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .Include(d => d.Agent)
                 .Include(d => d.Cases)
                 .FirstAsync(d => d.Id == debtor.Id);
@@ -254,7 +287,7 @@ public class DebtorService : IDebtorService
         try
         {
             var debtor = await _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .Include(d => d.Agent)
                 .Include(d => d.Cases)
                 .FirstOrDefaultAsync(d => d.Id == id);
@@ -281,17 +314,43 @@ public class DebtorService : IDebtorService
             }
 
             debtor.AgentId = request.AgentId;
-            debtor.IsCompany = request.IsCompany;
+            debtor.EntityType = request.EntityType;
             debtor.CompanyName = request.CompanyName;
             debtor.FirstName = request.FirstName;
             debtor.LastName = request.LastName;
+            debtor.BirthName = request.BirthName;
+            debtor.Gender = request.Gender;
+            debtor.DateOfBirth = request.DateOfBirth;
+            debtor.BirthPlace = request.BirthPlace;
+            debtor.BirthCountry = request.BirthCountry;
             debtor.Email = request.Email;
-            debtor.Phone = request.Phone;
             debtor.Street = request.Street;
+            debtor.HouseNumber = request.HouseNumber;
             debtor.ZipCode = request.ZipCode;
             debtor.City = request.City;
+            debtor.CityDistrict = request.CityDistrict;
+            debtor.Floor = request.Floor;
+            debtor.DoorPosition = request.DoorPosition;
+            debtor.AdditionalAddressInfo = request.AdditionalAddressInfo;
+            debtor.POBox = request.POBox;
+            debtor.POBoxZipCode = request.POBoxZipCode;
             debtor.Country = request.Country;
             debtor.AddressStatus = request.AddressStatus;
+            debtor.RepresentedBy = request.RepresentedBy;
+            debtor.IsDeceased = request.IsDeceased;
+            debtor.PlaceOfDeath = request.PlaceOfDeath;
+            debtor.PhoneLandline = request.PhoneLandline;
+            debtor.PhoneMobile = request.PhoneMobile;
+            debtor.Fax = request.Fax;
+            debtor.EboAddress = request.EboAddress;
+            debtor.BankIBAN = request.BankIBAN;
+            debtor.BankBIC = request.BankBIC;
+            debtor.BankName = request.BankName;
+            debtor.RegisterCourt = request.RegisterCourt;
+            debtor.RegisterNumber = request.RegisterNumber;
+            debtor.VatId = request.VatId;
+            debtor.Partners = request.Partners;
+            debtor.FileReference = request.FileReference;
             debtor.RiskScore = request.RiskScore;
             debtor.Notes = request.Notes;
 
@@ -362,19 +421,19 @@ public class DebtorService : IDebtorService
     {
         if (currentUser.Role == UserRole.CLIENT)
         {
-            if (currentUser.TenantId == null)
+            if (currentUser.KreditorId == null)
             {
                 return query.Where(d => false); // Return empty
             }
-            query = query.Where(d => d.TenantId == currentUser.TenantId.Value);
+            query = query.Where(d => d.KreditorId == currentUser.KreditorId.Value);
         }
         else if (currentUser.Role == UserRole.AGENT)
         {
-            var assignedTenantIds = _context.UserTenantAssignments
-                .Where(uta => uta.UserId == currentUser.Id)
-                .Select(uta => uta.TenantId);
+            var assignedKreditorIds = _context.UserKreditorAssignments
+                .Where(uka => uka.UserId == currentUser.Id)
+                .Select(uka => uka.KreditorId);
 
-            query = query.Where(d => assignedTenantIds.Contains(d.TenantId));
+            query = query.Where(d => assignedKreditorIds.Contains(d.KreditorId));
         }
         // ADMIN sees all
 
@@ -390,19 +449,19 @@ public class DebtorService : IDebtorService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == debtor.TenantId;
+            return currentUser.KreditorId == debtor.KreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == debtor.TenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == debtor.KreditorId);
         }
 
         return false;
     }
 
-    private async Task<bool> HasAccessToTenant(Guid tenantId, User currentUser)
+    private async Task<bool> HasAccessToKreditor(Guid kreditorId, User currentUser)
     {
         if (currentUser.Role == UserRole.ADMIN)
         {
@@ -411,13 +470,13 @@ public class DebtorService : IDebtorService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == tenantId;
+            return currentUser.KreditorId == kreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == tenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == kreditorId);
         }
 
         return false;
@@ -428,27 +487,53 @@ public class DebtorService : IDebtorService
         return new DebtorDto
         {
             Id = debtor.Id,
-            TenantId = debtor.TenantId,
+            KreditorId = debtor.KreditorId,
             AgentId = debtor.AgentId,
-            IsCompany = debtor.IsCompany,
+            EntityType = debtor.EntityType,
             CompanyName = debtor.CompanyName,
             FirstName = debtor.FirstName,
             LastName = debtor.LastName,
+            BirthName = debtor.BirthName,
+            Gender = debtor.Gender,
+            DateOfBirth = debtor.DateOfBirth,
+            BirthPlace = debtor.BirthPlace,
+            BirthCountry = debtor.BirthCountry,
             Email = debtor.Email,
-            Phone = debtor.Phone,
             Street = debtor.Street,
+            HouseNumber = debtor.HouseNumber,
             ZipCode = debtor.ZipCode,
             City = debtor.City,
+            CityDistrict = debtor.CityDistrict,
+            Floor = debtor.Floor,
+            DoorPosition = debtor.DoorPosition,
+            AdditionalAddressInfo = debtor.AdditionalAddressInfo,
+            POBox = debtor.POBox,
+            POBoxZipCode = debtor.POBoxZipCode,
             Country = debtor.Country,
             AddressStatus = debtor.AddressStatus,
             AddressLastChecked = debtor.AddressLastChecked,
+            RepresentedBy = debtor.RepresentedBy,
+            IsDeceased = debtor.IsDeceased,
+            PlaceOfDeath = debtor.PlaceOfDeath,
+            PhoneLandline = debtor.PhoneLandline,
+            PhoneMobile = debtor.PhoneMobile,
+            Fax = debtor.Fax,
+            EboAddress = debtor.EboAddress,
+            BankIBAN = debtor.BankIBAN,
+            BankBIC = debtor.BankBIC,
+            BankName = debtor.BankName,
+            RegisterCourt = debtor.RegisterCourt,
+            RegisterNumber = debtor.RegisterNumber,
+            VatId = debtor.VatId,
+            Partners = debtor.Partners,
+            FileReference = debtor.FileReference,
             RiskScore = debtor.RiskScore,
             TotalDebt = debtor.TotalDebt,
             OpenCases = debtor.OpenCases,
             Notes = debtor.Notes,
             CreatedAt = debtor.CreatedAt,
             UpdatedAt = debtor.UpdatedAt,
-            TenantName = debtor.Tenant?.Name ?? string.Empty,
+            KreditorName = debtor.Kreditor?.Name ?? string.Empty,
             AgentName = debtor.Agent?.Name
         };
     }
