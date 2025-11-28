@@ -3,23 +3,27 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Badge, Button, Modal, Input } from '../components/UI';
 import { ClaimDetailModal } from '../components/ClaimDetailModal';
+import { kreditorenApi, casesApi } from '../services/api/apiClient';
+import type { ApiError } from '../services/api/apiClient';
 import { dataService } from '../services/dataService';
-import { Tenant, CollectionCase, User, CaseStatus, ImportProviderType, ImportMapping } from '../types';
+import { CaseStatus } from '../types';
+import type { Kreditor, CollectionCase, User, ImportProviderType, ImportMapping } from '../types';
 import { ArrowLeft, Building2, Mail, CreditCard, Users, TrendingUp, Wallet, Settings, Shield, FileText, Gavel, Filter, UploadCloud, FileSpreadsheet, Check, AlertCircle, ArrowRight, Sparkles, Database, FileCode, Printer, Download, LayoutGrid } from 'lucide-react';
 import { MonetarisLogo } from '../components/ui/Elements';
 
 export const ClientDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [client, setClient] = useState<Tenant | null>(null);
+  const [client, setClient] = useState<Kreditor | null>(null);
   const [cases, setCases] = useState<CollectionCase[]>([]);
   const [filteredCases, setFilteredCases] = useState<CollectionCase[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CLAIMS'>('OVERVIEW');
   const [selectedClaim, setSelectedClaim] = useState<CollectionCase | null>(null);
   const [filterType, setFilterType] = useState<'ALL' | 'OPEN' | 'LEGAL'>('ALL');
-  
+
   // Import Wizard State
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importStep, setImportStep] = useState<'PROVIDER' | 'UPLOAD' | 'MAPPING' | 'SUCCESS'>('PROVIDER');
@@ -43,14 +47,39 @@ export const ClientDetail: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       if (id) {
-        const data = await dataService.getTenantById(id);
-        if (data) {
-          setClient(data.tenant);
-          setCases(data.cases);
-          setFilteredCases(data.cases); // Init
-          setUsers(data.users);
+        try {
+          setLoading(true);
+          setError(null);
+          const tenantData = await kreditorenApi.getById(id);
+          const casesData = await casesApi.getAll({ kreditorId: id });
+
+          // For users, we still use dataService as there's no users API yet
+          const fullData = await dataService.getTenantById(id);
+
+          setClient(tenantData);
+          const casesArray = casesData?.data || [];
+          setCases(casesArray);
+          setFilteredCases(casesArray);
+          setUsers(fullData?.users || []);
+
+          // Debug: Log to help diagnose data issues
+          console.log('ClientDetail loaded:', {
+            kreditorId: id,
+            tenantData,
+            casesCount: casesArray.length,
+            cases: casesArray
+          });
+        } catch (err) {
+          const apiError = err as ApiError;
+          setError(apiError.message || 'Failed to load client data');
+          console.error('Error loading client:', err);
+          // Fallback to empty arrays
+          setCases([]);
+          setFilteredCases([]);
+          setUsers([]);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     };
     load();
@@ -131,6 +160,17 @@ export const ClientDetail: React.FC = () => {
   };
 
   if (loading) return <div className="p-12 text-center text-slate-500 animate-pulse">Lade Mandantenakte...</div>;
+  if (error) return (
+    <div className="p-12 text-center">
+      <div className="glass-panel p-12 rounded-[32px] border-2 border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 max-w-2xl mx-auto">
+        <p className="text-red-600 dark:text-red-400 font-bold mb-2">Fehler beim Laden</p>
+        <p className="text-red-500 dark:text-red-400 text-sm mb-4">{error}</p>
+        <Button variant="secondary" onClick={() => navigate('/clients')}>
+          <ArrowLeft size={18} className="mr-2" /> Zurück zur Übersicht
+        </Button>
+      </div>
+    </div>
+  );
   if (!client) return <div className="p-12 text-center">Mandant nicht gefunden.</div>;
 
   const stats = {

@@ -3,7 +3,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Badge, Button, Modal, FileIcon } from '../components/UI';
 import { ClaimDetailModal } from '../components/ClaimDetailModal';
-import { dataService } from '../services/dataService';
+import { debtorsApi, casesApi, documentsApi } from '../services/api/apiClient';
+import type { ApiError } from '../services/api/apiClient';
 import { Debtor, CollectionCase, Document, CaseStatus, RiskScore } from '../types';
 import { MapPin, Phone, Mail, Download, Eye, UploadCloud, ArrowLeft, Calendar, FileText, AlertTriangle, History, Calculator, Gavel, LayoutGrid } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export const DebtorDetail: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [activeTab, setActiveTab] = useState<'CLAIMS' | 'DOCUMENTS'>('CLAIMS');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const [selectedClaim, setSelectedClaim] = useState<CollectionCase | null>(null);
@@ -24,14 +26,38 @@ export const DebtorDetail: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       if (id) {
-        const data = await dataService.getDebtorById(id);
-        if (data) {
-          setDebtor(data.debtor);
-          setCases(data.cases);
+        try {
+          setLoading(true);
+          setError(null);
+
+          // Fetch debtor from API
+          const debtorData = await debtorsApi.getById(id);
+          setDebtor(debtorData);
+
+          // Fetch cases for this debtor from API
+          const casesResult = await casesApi.getAll({ debtorId: id });
+          setCases(casesResult?.data || []);
+
+          // Fetch documents for this debtor from API
+          const docsResult = await documentsApi.getAll({ debtorId: id });
+          setDocuments(docsResult?.data || []);
+
+          console.log('DebtorDetail loaded:', {
+            debtorId: id,
+            debtorData,
+            casesCount: casesResult?.data?.length || 0,
+            docsCount: docsResult?.data?.length || 0
+          });
+        } catch (err) {
+          const apiError = err as ApiError;
+          setError(apiError.message || 'Failed to load debtor data');
+          console.error('Error loading debtor detail:', err);
+          // Fallback to empty arrays
+          setCases([]);
+          setDocuments([]);
+        } finally {
+          setLoading(false);
         }
-        const docs = await dataService.getDebtorDocuments(id);
-        setDocuments(docs);
-        setLoading(false);
       }
     };
     load();
@@ -40,9 +66,14 @@ export const DebtorDetail: React.FC = () => {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0] && debtor) {
       setUploading(true);
-      const newDoc = await dataService.uploadDocument(debtor.id, e.target.files[0]);
-      setDocuments([newDoc, ...documents]);
-      setUploading(false);
+      try {
+        const newDoc = await documentsApi.upload(e.target.files[0], { debtorId: debtor.id });
+        setDocuments([newDoc, ...documents]);
+      } catch (err) {
+        console.error('Upload failed:', err);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -63,6 +94,13 @@ export const DebtorDetail: React.FC = () => {
   };
 
   if (loading) return <div className="p-12 text-center text-slate-500 animate-pulse">Lade Schuldnerakte...</div>;
+  if (error) return (
+    <div className="p-12 text-center">
+      <p className="text-red-500 font-medium mb-2">Fehler beim Laden der Schuldnerakte</p>
+      <p className="text-slate-500 text-sm mb-4">{error}</p>
+      <Button variant="secondary" onClick={() => navigate('/debtors')}>Zurück zur Übersicht</Button>
+    </div>
+  );
   if (!debtor) return <div className="p-12 text-center">Schuldner nicht gefunden.</div>;
 
   return (
@@ -87,7 +125,7 @@ export const DebtorDetail: React.FC = () => {
                      <div className="space-y-3">
                         <div className="flex items-start gap-3 text-slate-700 dark:text-slate-300">
                            <MapPin className="mt-1 text-slate-400" size={18} />
-                           <span>{debtor.address.street}<br/>{debtor.address.zipCode} {debtor.address.city}</span>
+                           <span>{debtor.street} {debtor.houseNumber}<br/>{debtor.zipCode} {debtor.city}</span>
                         </div>
                         <div className="flex items-center gap-3 text-slate-700 dark:text-slate-300">
                            <Mail className="text-slate-400" size={18} />
