@@ -58,6 +58,24 @@ export enum RiskScore {
   E = 'E'  // Default
 }
 
+export enum EntityType {
+  NATURAL_PERSON = 'NATURAL_PERSON',
+  LEGAL_ENTITY = 'LEGAL_ENTITY',
+  PARTNERSHIP = 'PARTNERSHIP'
+}
+
+export enum Gender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  DIVERSE = 'DIVERSE'
+}
+
+export enum DoorPosition {
+  LEFT = 'LEFT',
+  RIGHT = 'RIGHT',
+  MIDDLE = 'MIDDLE'
+}
+
 // --- Communication Entities ---
 
 export interface Inquiry {
@@ -84,7 +102,7 @@ export interface CommunicationTemplate {
 export interface TemplateVariable {
     key: string;
     label: string;
-    category: 'Debtor' | 'Case' | 'Tenant' | 'System';
+    category: 'Debtor' | 'Case' | 'Kreditor' | 'System';
     example: string;
 }
 
@@ -103,65 +121,201 @@ export interface Document {
 // --- Entities ---
 
 export interface Address {
-  street: string;
-  zipCode: string;
-  city: string;
+  street?: string;
+  houseNumber?: string;  // NEW
+  zipCode?: string;
+  city?: string;
+  cityDistrict?: string;  // NEW (Ortsteil)
+  floor?: string;  // NEW (Etage)
+  doorPosition?: DoorPosition;  // NEW (Welche Tür)
+  additionalAddressInfo?: string;  // NEW (c/o, bei, etc.)
+  poBox?: string;  // NEW (Postfach)
+  poBoxZipCode?: string;  // NEW (PLZ Postfach)
   country: string;
   status: AddressStatus;
   lastChecked?: string;
 }
 
-export interface Tenant {
+export interface Kreditor {
   id: string;
-  name: string;
-  registrationNumber: string;
-  contactEmail: string;
-  bankAccountIBAN: string; // For payouts
+
+  // Entity Type
+  entityType: EntityType;
+
+  // Natural Person Fields (same as Debtor)
+  firstName?: string;
+  lastName?: string;
+  birthName?: string;
+  gender?: Gender;
+  dateOfBirth?: string;
+  birthPlace?: string;
+  birthCountry?: string;
+
+  // Legal Entity Fields
+  name: string;  // Company name (existing)
+  registrationNumber: string;  // HRB-Nummer (existing)
+  registerCourt?: string;
+  vatId?: string;
+
+  // Address
+  street?: string;
+  houseNumber?: string;
+  zipCode?: string;
+  city?: string;
+  cityDistrict?: string;
+  floor?: string;
+  doorPosition?: DoorPosition;
+  additionalAddressInfo?: string;
+  poBox?: string;
+  poBoxZipCode?: string;
+  country?: string;
+
+  // Representative
+  representedBy?: string;
+  isDeceased?: boolean;
+  placeOfDeath?: string;
+
+  // Contact
+  contactEmail: string;  // Keep existing name
+  phoneLandline?: string;
+  phoneMobile?: string;
+  fax?: string;
+  eboAddress?: string;
+
+  // Banking
+  bankAccountIBAN: string;  // Keep existing name
+  bankBIC?: string;
+  bankName?: string;
+
+  // Partnership
+  partners?: string;
+
+  // Business
+  fileReference?: string;
+
+  // Stats (KEEP existing)
+  totalDebtors?: number;
+  totalCases?: number;
+  totalVolume?: number;
 }
 
 export interface Debtor {
   id: string;
-  tenantId: string;
-  agentId?: string; // Assigned Agent
-  isCompany: boolean;
-  companyName?: string;
+  kreditorId: string;
+  agentId?: string;
+
+  // Entity Type (replaces isCompany)
+  entityType: EntityType;
+
+  // Natural Person Fields
   firstName?: string;
   lastName?: string;
-  email: string;
-  phone: string;
-  address: Address;
+  birthName?: string;  // Geburtsname
+  gender?: Gender;
+  dateOfBirth?: string;
+  birthPlace?: string;  // Geburtsort
+  birthCountry?: string;  // Geburtsland
+
+  // Legal Entity Fields
+  companyName?: string;
+  registerCourt?: string;  // Handelsregister (Amtsgericht)
+  registerNumber?: string;  // HRB-Nummer
+  vatId?: string;  // USt-ID
+
+  // Address (embedded)
+  street?: string;
+  houseNumber?: string;
+  zipCode?: string;
+  city?: string;
+  cityDistrict?: string;
+  floor?: string;
+  doorPosition?: DoorPosition;
+  additionalAddressInfo?: string;
+  poBox?: string;
+  poBoxZipCode?: string;
+  country: string;
+  addressStatus: AddressStatus;
+  addressLastChecked?: string;
+
+  // Representative
+  representedBy?: string;  // Vertreten durch
+  isDeceased?: boolean;  // Verstorben
+  placeOfDeath?: string;  // Sterbeort
+
+  // Contact
+  email?: string;
+  phoneLandline?: string;  // Telefon Festnetz
+  phoneMobile?: string;  // Telefon Mobil
+  fax?: string;
+  eboAddress?: string;  // Ebo-Adresse
+
+  // Banking
+  bankIBAN?: string;
+  bankBIC?: string;
+  bankName?: string;
+
+  // Partnership
+  partners?: string;  // JSON string array
+
+  // Business
+  fileReference?: string;  // Aktenzeichen
+
+  // Statistics (KEEP existing)
   riskScore: RiskScore;
   totalDebt: number;
   openCases: number;
-  notes?: string; // Internal notes
+  notes?: string;
+
+  // Backwards compatibility
+  isCompany?: boolean;  // Computed: entityType !== NATURAL_PERSON
+  phone?: string;  // Computed: phoneLandline ?? phoneMobile
+  address?: Address;  // Computed from embedded fields
+
+  // Display name helper
+  displayName?: string;
 }
 
 export interface CollectionCase {
   id: string;
-  tenantId: string;
-  tenantName?: string; // View Prop
+  kreditorId: string;
+  kreditorName?: string; // View Prop
   debtorId: string;
   debtorName: string; // View Prop
   agentId?: string; // Assigned Agent
-  
+
   // Financials
   principalAmount: number; // Hauptforderung
   costs: number; // Mahnkosten / Gerichtskosten
   interest: number; // Zinsen
   totalAmount: number; // Calculated (Principal + Costs + Interest)
   currency: string;
-  
+
   // Workflow
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
   status: CaseStatus;
   nextActionDate?: string; // Wiedervorlage / Fristende
-  
+  createdAt?: string; // Creation timestamp
+
   // Legal Data
   competentCourt?: string; // Zuständiges Mahngericht (automatisch ermittelt)
   courtFileNumber?: string; // Aktenzeichen (wenn vorhanden)
-  
+
+  // NEW: Claim Details (Forderung per PDF requirements)
+  dateOfOrigin?: string;  // Tag der Entstehung
+  claimDescription?: string;  // Exakte Beschreibung
+  interestStartDate?: string;  // Zinslauf Beginn
+  interestRate?: number;  // Zinshöhe
+  isVariableInterest?: boolean;  // Basiszins gekoppelt
+  interestEndDate?: string;  // Zinsende
+  additionalCosts?: number;  // Nebenkosten
+  procedureCosts?: number;  // Verfahrenskosten
+  interestOnCosts?: boolean;  // Zinslauf Verfahrenskosten
+  statuteOfLimitationsDate?: string;  // Verjährungsfrist
+  paymentAllocationNotes?: string;  // Zahlungsverrechnung §§ 366, 367 BGB
+
+  // KEEP existing
   history: AuditLogEntry[];
   aiAnalysis?: string;
   attachments?: string[];

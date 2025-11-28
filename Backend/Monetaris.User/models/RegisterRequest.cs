@@ -28,7 +28,7 @@ public class RegisterRequest
     public UserRole Role { get; set; }
 
     /// <summary>
-    /// Primary tenant ID (required for CLIENT role)
+    /// Primary kreditor ID (required for CLIENT role)
     /// </summary>
-    public Guid? TenantId { get; set; }
+    public Guid? KreditorId { get; set; }
 }

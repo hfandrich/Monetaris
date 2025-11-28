@@ -30,26 +30,26 @@ public class InquiryService : IInquiryService
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Debtor)
                 .Include(i => i.Case)
-                    .ThenInclude(c => c.Tenant)
+                    .ThenInclude(c => c.Kreditor)
                 .Include(i => i.CreatedByUser);
 
             // Role-based filtering
             if (currentUser.Role == UserRole.CLIENT)
             {
-                if (currentUser.TenantId == null)
+                if (currentUser.KreditorId == null)
                 {
-                    return Result<List<InquiryDto>>.Failure("Client user has no assigned tenant");
+                    return Result<List<InquiryDto>>.Failure("Client user has no assigned kreditor");
                 }
-                query = query.Where(i => i.Case.TenantId == currentUser.TenantId.Value);
+                query = query.Where(i => i.Case.KreditorId == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                query = query.Where(i => assignedTenantIds.Contains(i.Case.TenantId));
+                query = query.Where(i => assignedKreditorIds.Contains(i.Case.KreditorId));
             }
             // ADMIN sees all
 
@@ -77,7 +77,7 @@ public class InquiryService : IInquiryService
         {
             // Verify case exists and user has access
             var caseEntity = await _context.Cases
-                .Include(c => c.Tenant)
+                .Include(c => c.Kreditor)
                 .Include(c => c.Debtor)
                 .FirstOrDefaultAsync(c => c.Id == request.CaseId);
 
@@ -107,7 +107,7 @@ public class InquiryService : IInquiryService
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Debtor)
                 .Include(i => i.Case)
-                    .ThenInclude(c => c.Tenant)
+                    .ThenInclude(c => c.Kreditor)
                 .Include(i => i.CreatedByUser)
                 .FirstAsync(i => i.Id == inquiry.Id);
 
@@ -132,7 +132,7 @@ public class InquiryService : IInquiryService
                 .Include(i => i.Case)
                     .ThenInclude(c => c.Debtor)
                 .Include(i => i.Case)
-                    .ThenInclude(c => c.Tenant)
+                    .ThenInclude(c => c.Kreditor)
                 .Include(i => i.CreatedByUser)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
@@ -181,13 +181,13 @@ public class InquiryService : IInquiryService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == caseEntity.TenantId;
+            return currentUser.KreditorId == caseEntity.KreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == caseEntity.TenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == caseEntity.KreditorId);
         }
 
         return false;
@@ -195,7 +195,7 @@ public class InquiryService : IInquiryService
 
     private InquiryDto MapToDto(Shared.Models.Entities.Inquiry inquiry)
     {
-        var debtorName = inquiry.Case.Debtor.IsCompany
+        var debtorName = inquiry.Case.Debtor.EntityType != EntityType.NATURAL_PERSON
             ? inquiry.Case.Debtor.CompanyName ?? "Unknown"
             : $"{inquiry.Case.Debtor.FirstName} {inquiry.Case.Debtor.LastName}";
 

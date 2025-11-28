@@ -12,11 +12,11 @@ using System.Security.Claims;
 namespace Monetaris.Template.Api;
 
 /// <summary>
-/// POST endpoint to create a new communication template (ADMIN only)
+/// POST endpoint to create a new communication template (ADMIN and AGENT)
 /// </summary>
 [ApiController]
 [Route("api/templates")]
-[Authorize(Roles = "ADMIN")]
+[Authorize(Roles = "ADMIN,AGENT")]
 public class CreateTemplate : ControllerBase
 {
     private readonly ITemplateService _service;

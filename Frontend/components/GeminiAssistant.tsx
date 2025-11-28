@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Send,
@@ -20,7 +19,9 @@ import {
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { authService } from '../services/authService';
+import { API_ENDPOINTS } from '../services/api/config';
 import { CaseStatus, RiskScore, AddressStatus, Debtor } from '../types';
+import { logger } from '../utils/logger';
 
 // --- Types for Chat ---
 interface Message {
@@ -33,16 +34,26 @@ interface Message {
 }
 
 // --- Tool Definitions ---
-const toolDefinitions: FunctionDeclaration[] = [
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, any>;
+    required?: string[];
+  };
+}
+
+const toolDefinitions: ToolDefinition[] = [
   {
     name: 'get_dashboard_stats',
     description:
       "Retrieves current high-level KPI statistics. Scope: 'MINE' (only my cases) or 'ALL' (global).",
     parameters: {
-      type: Type.OBJECT,
+      type: 'object',
       properties: {
         scope: {
-          type: Type.STRING,
+          type: 'string',
           enum: ['MINE', 'ALL'],
           description: 'Filter by assigned agent or show all',
         },
@@ -54,20 +65,20 @@ const toolDefinitions: FunctionDeclaration[] = [
     description:
       "Retrieves a dataset list/count. Entity: 'CASES', 'DEBTORS'. Supports filtering by amount and status.",
     parameters: {
-      type: Type.OBJECT,
+      type: 'object',
       properties: {
-        entity: { type: Type.STRING },
-        scope: { type: Type.STRING, enum: ['MINE', 'ALL'] },
+        entity: { type: 'string' },
+        scope: { type: 'string', enum: ['MINE', 'ALL'] },
         minAmount: {
-          type: Type.NUMBER,
+          type: 'number',
           description: 'Filter cases with totalAmount greater or equal to this value',
         },
         maxAmount: {
-          type: Type.NUMBER,
+          type: 'number',
           description: 'Filter cases with totalAmount less or equal to this value',
         },
         status: {
-          type: Type.STRING,
+          type: 'string',
           description: "Filter by specific CaseStatus (e.g. 'NEW', 'PAID', 'REMINDER_1')",
         },
       },
@@ -78,8 +89,8 @@ const toolDefinitions: FunctionDeclaration[] = [
     name: 'search_database',
     description: 'Searches for debtors or cases by name, ID, or invoice number.',
     parameters: {
-      type: Type.OBJECT,
-      properties: { query: { type: Type.STRING } },
+      type: 'object',
+      properties: { query: { type: 'string' } },
       required: ['query'],
     },
   },
@@ -87,17 +98,17 @@ const toolDefinitions: FunctionDeclaration[] = [
     name: 'create_debtor',
     description: 'Creates a NEW debtor from extracted text. Requires clear Name and Address.',
     parameters: {
-      type: Type.OBJECT,
+      type: 'object',
       properties: {
-        firstName: { type: Type.STRING },
-        lastName: { type: Type.STRING },
-        companyName: { type: Type.STRING },
-        email: { type: Type.STRING },
-        phone: { type: Type.STRING },
-        street: { type: Type.STRING },
-        zipCode: { type: Type.STRING },
-        city: { type: Type.STRING },
-        notes: { type: Type.STRING },
+        firstName: { type: 'string' },
+        lastName: { type: 'string' },
+        companyName: { type: 'string' },
+        email: { type: 'string' },
+        phone: { type: 'string' },
+        street: { type: 'string' },
+        zipCode: { type: 'string' },
+        city: { type: 'string' },
+        notes: { type: 'string' },
       },
       required: ['city'],
     },
@@ -106,13 +117,13 @@ const toolDefinitions: FunctionDeclaration[] = [
     name: 'export_report',
     description: 'Generates a report file link with optional filters.',
     parameters: {
-      type: Type.OBJECT,
+      type: 'object',
       properties: {
-        format: { type: Type.STRING },
-        scope: { type: Type.STRING, enum: ['MINE', 'ALL'] },
-        minAmount: { type: Type.NUMBER, description: 'Filter report for amounts >= this value' },
-        maxAmount: { type: Type.NUMBER, description: 'Filter report for amounts <= this value' },
-        status: { type: Type.STRING, description: 'Filter report by status' },
+        format: { type: 'string' },
+        scope: { type: 'string', enum: ['MINE', 'ALL'] },
+        minAmount: { type: 'number', description: 'Filter report for amounts >= this value' },
+        maxAmount: { type: 'number', description: 'Filter report for amounts <= this value' },
+        status: { type: 'string', description: 'Filter report by status' },
       },
       required: ['format'],
     },
@@ -302,7 +313,7 @@ export const GeminiAssistant: React.FC = () => {
   };
 
   const handleSend = async () => {
-    if (!inputValue.trim() || !process.env.API_KEY) return;
+    if (!inputValue.trim()) return;
 
     const { user } = authService.checkSession();
     if (!user) return;
@@ -316,17 +327,17 @@ export const GeminiAssistant: React.FC = () => {
     // Enhanced System Prompt for Extraction & Scope Awareness
     const contextInstruction = `
     Du bist "Babera Ai", der intelligente Assistent für die Inkasso-Software "Monetaris".
-    
+
     **AKTUELLE USER-DATEN:**
     User: ${user.name} (ID: ${user.id})
     Rolle: ${user.role}
-    
+
     **DEINE AUFGABEN:**
     1. **Daten-Extraktion**: Wenn der User einen Text (z.B. E-Mail oder PDF-Copy-Paste) eingibt, der nach Schuldnerdaten aussieht:
        - Analysiere den Text auf Name, Firma, Adresse (Straße, PLZ, Ort).
        - Wenn wichtige Daten fehlen (z.B. PLZ oder Ort), **FRAGE DEN USER** nach diesen Details, bevor du ein Tool aufrufst. Erfinde keine Daten!
        - Wenn alles da ist, nutze das Tool 'create_debtor'.
-    
+
     2. **Scope-Management**:
        - Wenn der User "meine Fälle" oder "mein Portfolio" sagt, nutze 'scope: "MINE"'.
        - Wenn der User "alle" oder "global" sagt, nutze 'scope: "ALL"'.
@@ -344,39 +355,46 @@ export const GeminiAssistant: React.FC = () => {
     `;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const modelId = 'gemini-2.5-flash';
-
-      const response = await ai.models.generateContent({
-        model: modelId,
-        contents: [
-          { role: 'user', parts: [{ text: contextInstruction }] },
-          ...messages
-            .filter((m) => m.role !== 'system')
-            .map((m) => ({
-              role: m.role === 'user' ? 'user' : 'model',
-              parts: [{ text: m.text }],
-            })),
-          { role: 'user', parts: [{ text: inputValue }] },
-        ],
-        config: {
-          tools: [{ functionDeclarations: toolDefinitions }],
-        },
-      });
-
-      const responseParts = response.candidates?.[0]?.content?.parts || [];
-      let botResponseText = '';
-      let toolCalls: any[] = [];
-
-      for (const part of responseParts) {
-        if (part.text) botResponseText += part.text;
-        if (part.functionCall) toolCalls.push(part.functionCall);
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('No authentication token');
       }
 
-      if (toolCalls.length > 0) {
-        setThinkingStep(`Führe ${toolCalls.length} Aktionen aus...`);
+      // Build message history for backend
+      const messageHistory = messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({
+          role: m.role,
+          text: m.text,
+        }));
 
-        for (const call of toolCalls) {
+      const response = await fetch(API_ENDPOINTS.AI.CHAT, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'user', text: contextInstruction },
+            ...messageHistory,
+            { role: 'user', text: inputValue },
+          ],
+          tools: toolDefinitions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI request failed');
+      }
+
+      const data = await response.json();
+
+      // Handle tool calls if present
+      if (data.toolCalls && data.toolCalls.length > 0) {
+        setThinkingStep(`Führe ${data.toolCalls.length} Aktionen aus...`);
+
+        for (const call of data.toolCalls) {
           // Inject User ID into args if scope is MINE or needed for creation
           const args = { ...call.args, userId: user.id };
           const result = await executeTool(call.name, args);
@@ -392,14 +410,15 @@ export const GeminiAssistant: React.FC = () => {
         }
       }
 
-      if (botResponseText) {
+      // Handle text response
+      if (data.text) {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now().toString(), role: 'model', text: botResponseText },
+          { id: Date.now().toString(), role: 'model', text: data.text },
         ]);
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       setMessages((prev) => [
         ...prev,
         {
@@ -470,7 +489,7 @@ export const GeminiAssistant: React.FC = () => {
       case 'create_debtor':
         const newDebtor: Debtor = {
           id: `d-ai-${Date.now()}`,
-          tenantId: 't1',
+          kreditorId: 't1',
           agentId: args.userId, // Assign to current user (Agent Ownership)
           isCompany: !!args.companyName,
           companyName: args.companyName,
@@ -676,7 +695,7 @@ export const GeminiAssistant: React.FC = () => {
                   const text = await navigator.clipboard.readText();
                   setInputValue((prev) => prev + (prev ? '\n' : '') + text);
                 } catch (e) {
-                  console.error(e);
+                  logger.error(e);
                 }
               }}
             >

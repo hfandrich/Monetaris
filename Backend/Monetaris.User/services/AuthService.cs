@@ -1,6 +1,8 @@
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Monetaris.Shared.Enums;
 using Monetaris.Shared.Interfaces;
 using Monetaris.Shared.Models;
@@ -19,15 +21,21 @@ public class AuthService : IAuthService
     private readonly IApplicationDbContext _context;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IConfiguration _configuration;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IApplicationDbContext context,
         IJwtTokenGenerator jwtTokenGenerator,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IMemoryCache cache,
+        ILogger<AuthService> logger)
     {
         _context = context;
         _jwtTokenGenerator = jwtTokenGenerator;
         _configuration = configuration;
+        _cache = cache;
+        _logger = logger;
     }
 
     /// <summary>
@@ -37,7 +45,7 @@ public class AuthService : IAuthService
     {
         // Find user by email
         var user = await _context.Users
-            .Include(u => u.TenantAssignments)
+            .Include(u => u.KreditorAssignments)
             .FirstOrDefaultAsync(u => u.Email == request.Email);
 
         if (user == null)
@@ -58,19 +66,29 @@ public class AuthService : IAuthService
         }
 
         // Generate tokens
-        var assignedTenantIds = user.TenantAssignments
-            .Select(ta => ta.TenantId)
+        var assignedKreditorIds = user.KreditorAssignments
+            .Select(ka => ka.KreditorId)
             .ToList();
 
-        var authResponse = await GenerateAuthResponseAsync(user, assignedTenantIds);
+        var authResponse = await GenerateAuthResponseAsync(user, assignedKreditorIds);
         return Result<AuthResponse>.Success(authResponse);
     }
 
     /// <summary>
-    /// Authenticate debtor with case number and zip code (magic link)
+    /// Authenticate debtor with case number, zip code, and date of birth (multi-factor)
+    /// Includes rate limiting and comprehensive audit logging
     /// </summary>
     public async Task<Result<AuthResponse>> LoginDebtorAsync(LoginDebtorRequest request)
     {
+        // Check rate limiting BEFORE any database queries
+        if (IsRateLimited(request.InvoiceNumber))
+        {
+            _logger.LogWarning(
+                "Rate limit exceeded for debtor login attempt. Invoice: {InvoiceNumber}",
+                request.InvoiceNumber);
+            return Result<AuthResponse>.Failure("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Angaben.");
+        }
+
         // Find case by invoice number
         var caseEntity = await _context.Cases
             .Include(c => c.Debtor)
@@ -78,16 +96,38 @@ public class AuthService : IAuthService
 
         if (caseEntity == null)
         {
-            return Result<AuthResponse>.Failure("Invalid case number or zip code");
+            _logger.LogWarning(
+                "Debtor login failed: Case not found. Invoice: {InvoiceNumber}",
+                request.InvoiceNumber);
+            IncrementLoginAttempt(request.InvoiceNumber);
+            return Result<AuthResponse>.Failure("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Angaben.");
         }
 
         // Verify zip code matches debtor's address
         if (caseEntity.Debtor.ZipCode != request.ZipCode)
         {
-            return Result<AuthResponse>.Failure("Invalid case number or zip code");
+            _logger.LogWarning(
+                "Debtor login failed: Zip code mismatch. Invoice: {InvoiceNumber}, CaseId: {CaseId}",
+                request.InvoiceNumber,
+                caseEntity.Id);
+            IncrementLoginAttempt(request.InvoiceNumber);
+            return Result<AuthResponse>.Failure("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Angaben.");
         }
 
-        // Find or create debtor user account
+        // Verify date of birth matches (additional security factor)
+        if (caseEntity.Debtor.DateOfBirth == null ||
+            caseEntity.Debtor.DateOfBirth.Value.Date != request.DateOfBirth.Date)
+        {
+            _logger.LogWarning(
+                "Debtor login failed: Date of birth mismatch. Invoice: {InvoiceNumber}, CaseId: {CaseId}, DebtorId: {DebtorId}",
+                request.InvoiceNumber,
+                caseEntity.Id,
+                caseEntity.DebtorId);
+            IncrementLoginAttempt(request.InvoiceNumber);
+            return Result<AuthResponse>.Failure("Login fehlgeschlagen. Bitte überprüfen Sie Ihre Angaben.");
+        }
+
+        // All verification passed - find or create debtor user account
         var debtorEmail = $"debtor_{caseEntity.DebtorId}@monetaris.system";
         var debtorUser = await _context.Users
             .FirstOrDefaultAsync(u => u.Email == debtorEmail);
@@ -95,7 +135,7 @@ public class AuthService : IAuthService
         if (debtorUser == null)
         {
             // Get debtor's display name
-            var debtorName = caseEntity.Debtor.IsCompany
+            var debtorName = caseEntity.Debtor.EntityType != EntityType.NATURAL_PERSON
                 ? caseEntity.Debtor.CompanyName ?? "Unknown Company"
                 : $"{caseEntity.Debtor.FirstName} {caseEntity.Debtor.LastName}".Trim();
 
@@ -107,7 +147,7 @@ public class AuthService : IAuthService
                 Email = debtorEmail,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Random password
                 Role = UserRole.DEBTOR,
-                TenantId = caseEntity.TenantId,
+                KreditorId = caseEntity.KreditorId,
                 AvatarInitials = GetInitials(debtorName),
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
@@ -116,11 +156,53 @@ public class AuthService : IAuthService
 
             _context.Users.Add(debtorUser);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Created new debtor user account. DebtorId: {DebtorId}, UserId: {UserId}",
+                caseEntity.DebtorId,
+                debtorUser.Id);
         }
+
+        // Log successful login for fraud detection
+        _logger.LogInformation(
+            "Debtor login successful. CaseId: {CaseId}, DebtorId: {DebtorId}, UserId: {UserId}. Consider sending email notification.",
+            caseEntity.Id,
+            caseEntity.DebtorId,
+            debtorUser.Id);
 
         // Generate tokens
         var authResponse = await GenerateAuthResponseAsync(debtorUser, null);
         return Result<AuthResponse>.Success(authResponse);
+    }
+
+    /// <summary>
+    /// Check if an invoice number has exceeded rate limit (5 attempts per hour)
+    /// </summary>
+    private bool IsRateLimited(string invoiceNumber)
+    {
+        var key = $"debtor_login_attempts_{invoiceNumber}";
+        var attempts = _cache.GetOrCreate(key, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+            return 0;
+        });
+
+        return attempts >= 5;
+    }
+
+    /// <summary>
+    /// Increment login attempt counter for rate limiting
+    /// </summary>
+    private void IncrementLoginAttempt(string invoiceNumber)
+    {
+        var key = $"debtor_login_attempts_{invoiceNumber}";
+        var currentAttempts = _cache.GetOrCreate(key, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+            return 0;
+        });
+
+        _cache.Set(key, currentAttempts + 1, TimeSpan.FromHours(1));
     }
 
     /// <summary>
@@ -137,21 +219,21 @@ public class AuthService : IAuthService
             return Result<AuthResponse>.Failure("Email address is already registered");
         }
 
-        // Validate tenant ID for CLIENT role
-        if (request.Role == UserRole.CLIENT && !request.TenantId.HasValue)
+        // Validate kreditor ID for CLIENT role
+        if (request.Role == UserRole.CLIENT && !request.KreditorId.HasValue)
         {
-            return Result<AuthResponse>.Failure("Tenant ID is required for CLIENT role");
+            return Result<AuthResponse>.Failure("Kreditor ID is required for CLIENT role");
         }
 
-        // Validate tenant exists
-        if (request.TenantId.HasValue)
+        // Validate kreditor exists
+        if (request.KreditorId.HasValue)
         {
-            var tenantExists = await _context.Tenants
-                .AnyAsync(t => t.Id == request.TenantId.Value);
+            var kreditorExists = await _context.Kreditoren
+                .AnyAsync(k => k.Id == request.KreditorId.Value);
 
-            if (!tenantExists)
+            if (!kreditorExists)
             {
-                return Result<AuthResponse>.Failure("Tenant not found");
+                return Result<AuthResponse>.Failure("Kreditor not found");
             }
         }
 
@@ -163,7 +245,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
-            TenantId = request.TenantId,
+            KreditorId = request.KreditorId,
             AvatarInitials = GetInitials(request.Name),
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
@@ -186,7 +268,7 @@ public class AuthService : IAuthService
         // Find refresh token in database
         var tokenEntity = await _context.RefreshTokens
             .Include(rt => rt.User)
-                .ThenInclude(u => u.TenantAssignments)
+                .ThenInclude(u => u.KreditorAssignments)
             .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
         if (tokenEntity == null)
@@ -216,11 +298,11 @@ public class AuthService : IAuthService
         tokenEntity.RevokedAt = DateTime.UtcNow;
 
         // Generate new tokens
-        var assignedTenantIds = tokenEntity.User.TenantAssignments
-            .Select(ta => ta.TenantId)
+        var assignedKreditorIds = tokenEntity.User.KreditorAssignments
+            .Select(ka => ka.KreditorId)
             .ToList();
 
-        var authResponse = await GenerateAuthResponseAsync(tokenEntity.User, assignedTenantIds);
+        var authResponse = await GenerateAuthResponseAsync(tokenEntity.User, assignedKreditorIds);
         await _context.SaveChangesAsync();
 
         return Result<AuthResponse>.Success(authResponse);
@@ -249,10 +331,10 @@ public class AuthService : IAuthService
     /// <summary>
     /// Generate authentication response with new tokens
     /// </summary>
-    private async Task<AuthResponse> GenerateAuthResponseAsync(UserEntity user, List<Guid>? assignedTenantIds)
+    private async Task<AuthResponse> GenerateAuthResponseAsync(UserEntity user, List<Guid>? assignedKreditorIds)
     {
         // Generate JWT access token
-        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, assignedTenantIds);
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user, assignedKreditorIds);
 
         // Generate refresh token
         var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
@@ -282,8 +364,8 @@ public class AuthService : IAuthService
             Name = user.Name,
             Email = user.Email,
             Role = user.Role,
-            TenantId = user.TenantId,
-            AssignedTenantIds = assignedTenantIds,
+            KreditorId = user.KreditorId,
+            AssignedKreditorIds = assignedKreditorIds,
             AvatarInitials = user.AvatarInitials
         };
 
@@ -294,6 +376,75 @@ public class AuthService : IAuthService
             ExpiresIn = expirationMinutes * 60, // Convert to seconds
             User = userDto
         };
+    }
+
+    /// <summary>
+    /// Initiate password reset process
+    /// Generates reset token and logs reset link (email sending not implemented yet)
+    /// Always returns success for security (don't reveal if email exists)
+    /// </summary>
+    public async Task<Result<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        try
+        {
+            // Find user by email (but don't reveal if not found)
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if (user != null && user.IsActive)
+            {
+                // Generate reset token
+                var resetToken = Guid.NewGuid().ToString();
+                var expiresAt = DateTime.UtcNow.AddHours(24);
+
+                // Store token in cache (expires after 24 hours)
+                var cacheKey = $"password_reset_{resetToken}";
+                _cache.Set(cacheKey, new
+                {
+                    UserId = user.Id,
+                    Email = user.Email,
+                    ExpiresAt = expiresAt
+                }, TimeSpan.FromHours(24));
+
+                // Log reset link (for development - in production this would send email)
+                var resetLink = $"https://monetaris.app/#/reset-password?token={resetToken}";
+                _logger.LogInformation(
+                    "Password reset requested for user {Email}. Reset link: {ResetLink} (expires at {ExpiresAt})",
+                    user.Email,
+                    resetLink,
+                    expiresAt);
+
+                _logger.LogInformation(
+                    "Password reset token generated for user {UserId}. Token expires at {ExpiresAt}",
+                    user.Id,
+                    expiresAt);
+            }
+            else
+            {
+                // User not found or inactive - log but still return success
+                _logger.LogWarning(
+                    "Password reset requested for non-existent or inactive email: {Email}",
+                    request.Email);
+            }
+
+            // ALWAYS return success for security (don't reveal if email exists)
+            return Result<ForgotPasswordResponse>.Success(new ForgotPasswordResponse
+            {
+                Message = "Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zurücksetzen des Passworts gesendet.",
+                Success = true
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing password reset request for email: {Email}", request.Email);
+
+            // Even on error, return success for security
+            return Result<ForgotPasswordResponse>.Success(new ForgotPasswordResponse
+            {
+                Message = "Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zurücksetzen des Passworts gesendet.",
+                Success = true
+            });
+        }
     }
 
     /// <summary>

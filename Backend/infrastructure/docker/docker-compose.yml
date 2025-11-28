@@ -9,10 +9,10 @@ services:
     environment:
       POSTGRES_DB: monetaris
       POSTGRES_USER: monetaris_user
-      POSTGRES_PASSWORD: monetaris_pass
+      POSTGRES_PASSWORD: M0n3t4r1s_D3v_2024!
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=de_DE.UTF-8"
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -53,7 +53,7 @@ services:
       - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
       - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonarqube
       - SONAR_JDBC_USERNAME=monetaris_user
-      - SONAR_JDBC_PASSWORD=monetaris_pass
+      - SONAR_JDBC_PASSWORD=M0n3t4r1s_D3v_2024!
     ports:
       - "9000:9000"
     volumes:
@@ -92,6 +92,22 @@ services:
       - seq_data:/data
     networks:
       - monetaris-network
+
+  # Flyway - Database Migrations
+  flyway:
+    image: flyway/flyway:latest
+    container_name: monetaris-flyway
+    command: -url=jdbc:postgresql://postgres:5432/monetaris -user=monetaris_user -password=M0n3t4r1s_D3v_2024! migrate
+    volumes:
+      - ./migrations:/flyway/sql
+      - ./flyway.conf:/flyway/conf/flyway.conf
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - monetaris-network
+    profiles:
+      - migrations  # Only run when explicitly requested: docker-compose --profile migrations up flyway
 
 volumes:
   postgres_data:

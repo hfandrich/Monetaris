@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 
 /**
  * Generic Storage Repository to handle LocalStorage operations safely.
@@ -6,12 +7,12 @@
 export class StorageRepository<T> {
     private key: string;
     private seed: T;
-  
+
     constructor(key: string, seed: T) {
       this.key = key;
       this.seed = seed;
     }
-  
+
     load(): T {
       try {
         const stored = localStorage.getItem(this.key);
@@ -21,16 +22,16 @@ export class StorageRepository<T> {
         }
         return JSON.parse(stored);
       } catch (e) {
-        console.error(`Failed to load data for key: ${this.key}`, e);
+        logger.error(`Failed to load data for key: ${this.key}`, e);
         return this.seed;
       }
     }
-  
+
     save(data: T): void {
       try {
         localStorage.setItem(this.key, JSON.stringify(data));
       } catch (e) {
-        console.error(`Failed to save data for key: ${this.key}`, e);
+        logger.error(`Failed to save data for key: ${this.key}`, e);
       }
     }
 }

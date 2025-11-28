@@ -1,0 +1,1009 @@
+2025-11-27 20:13:17.425 +01:00 [INF] Starting Monetaris API
+2025-11-27 20:13:20.201 +01:00 [INF] Applying database migrations...
+2025-11-27 20:13:22.089 +01:00 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-27 20:13:22.510 +01:00 [INF] Executed DbCommand (42ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    migration_id character varying(150) NOT NULL,
+    product_version character varying(32) NOT NULL,
+    CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
+);
+2025-11-27 20:13:22.526 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-27 20:13:22.544 +01:00 [INF] Executed DbCommand (13ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2025-11-27 20:13:22.552 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-27 20:13:22.569 +01:00 [INF] No migrations were applied. The database is already up to date.
+2025-11-27 20:13:22.600 +01:00 [INF] Database migrations applied successfully
+2025-11-27 20:13:23.049 +01:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM kreditoren AS k)
+2025-11-27 20:13:23.062 +01:00 [INF] Database already seeded, skipping...
+2025-11-27 20:13:23.466 +01:00 [INF] Monetaris API started successfully
+2025-11-27 20:13:23.558 +01:00 [INF] User profile is available. Using 'C:\Users\fandrich\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-11-27 20:13:23.990 +01:00 [INF] Now listening on: http://localhost:3002
+2025-11-27 20:13:23.991 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-11-27 20:13:23.991 +01:00 [INF] Hosting environment: Development
+2025-11-27 20:13:23.991 +01:00 [INF] Content root path: C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi
+2025-11-27 20:13:25.595 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:13:25.679 +01:00 [WRN] Failed to determine the https port for redirect.
+2025-11-27 20:13:25.815 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:13:25.829 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:13:25.889 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:13:25.903 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:13:25.975 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 134.1212ms
+2025-11-27 20:13:25.981 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:13:25.985 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 340.8343 ms
+2025-11-27 20:13:25.989 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 407.9976ms
+2025-11-27 20:14:22.558 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:22.596 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:22.704 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 136.0946 ms
+2025-11-27 20:14:22.891 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 332.6398ms
+2025-11-27 20:14:22.926 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:22.931 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:22.936 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:22.939 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:22.943 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:22.945 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:22.953 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 12.3944ms
+2025-11-27 20:14:22.955 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:22.956 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 28.4717 ms
+2025-11-27 20:14:22.958 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 32.1715ms
+2025-11-27 20:14:22.980 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:22.982 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:22.983 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 1.6798 ms
+2025-11-27 20:14:22.983 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 3.0901ms
+2025-11-27 20:14:23.159 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:23.161 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:23.166 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:23.166 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:23.167 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:23.169 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:23.169 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 2.982ms
+2025-11-27 20:14:23.170 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:23.170 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 8.8691 ms
+2025-11-27 20:14:23.170 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 11.1764ms
+2025-11-27 20:14:23.456 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:23.457 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:23.458 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 0.5531 ms
+2025-11-27 20:14:23.458 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 2.1113ms
+2025-11-27 20:14:23.464 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 58
+2025-11-27 20:14:23.478 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:23.478 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:23.545 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:23.830 +01:00 [INF] Login attempt for email: client@techsolutions.de
+2025-11-27 20:14:24.157 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:24.158 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.160 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 2.1063 ms
+2025-11-27 20:14:24.160 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 3.0194ms
+2025-11-27 20:14:24.191 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:24.192 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.194 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:24.194 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:24.195 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:24.195 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:24.196 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 1.2633ms
+2025-11-27 20:14:24.196 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:24.196 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 4.0106 ms
+2025-11-27 20:14:24.196 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 6.3368ms
+2025-11-27 20:14:24.309 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:24.310 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.312 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 1.8076 ms
+2025-11-27 20:14:24.313 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 3.2093ms
+2025-11-27 20:14:24.333 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 54
+2025-11-27 20:14:24.335 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.337 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:24.338 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:24.347 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:24.348 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.349 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 0.7841 ms
+2025-11-27 20:14:24.350 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 2.4712ms
+2025-11-27 20:14:24.355 +01:00 [INF] Login attempt for email: wrong@email.com
+2025-11-27 20:14:24.365 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:24.366 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.370 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:24.371 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:24.373 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:24.373 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:24.374 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 2.0761ms
+2025-11-27 20:14:24.374 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:24.374 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 8.0136 ms
+2025-11-27 20:14:24.374 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 8.9618ms
+2025-11-27 20:14:24.388 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:24.395 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.397 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 8.1903 ms
+2025-11-27 20:14:24.398 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 10.3591ms
+2025-11-27 20:14:24.439 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 49
+2025-11-27 20:14:24.459 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:24.460 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.460 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 0.5327 ms
+2025-11-27 20:14:24.461 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 1.7366ms
+2025-11-27 20:14:24.470 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 53
+2025-11-27 20:14:24.474 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.474 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:24.475 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:24.482 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:24.483 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-27 20:14:24.483 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:24.483 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:24.484 +01:00 [INF] Login attempt for email: max@monetaris.com
+2025-11-27 20:14:25.028 +01:00 [INF] Executed DbCommand (105ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:25.127 +01:00 [INF] Executed DbCommand (52ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:25.148 +01:00 [INF] Executed DbCommand (32ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:25.155 +01:00 [WRN] Login failed for email: wrong@email.com. Error: Invalid email or password
+2025-11-27 20:14:25.162 +01:00 [INF] Executing BadRequestObjectResult, writing value of type '<>f__AnonymousType0`1[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-11-27 20:14:25.177 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 838.3652ms
+2025-11-27 20:14:25.178 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:25.181 +01:00 [INF] HTTP POST /api/auth/login responded 400 in 846.5765 ms
+2025-11-27 20:14:25.190 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 400 null application/json; charset=utf-8 856.9275ms
+2025-11-27 20:14:25.433 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:25.435 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:25.438 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 3.0145 ms
+2025-11-27 20:14:25.441 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 6.4449ms
+2025-11-27 20:14:25.447 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:25.448 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:25.448 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:25.449 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:25.451 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:25.453 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:25.454 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 4.8111ms
+2025-11-27 20:14:25.454 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:25.454 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 6.5361 ms
+2025-11-27 20:14:25.454 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 7.2196ms
+2025-11-27 20:14:25.609 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:25.610 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:25.623 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 13.0093 ms
+2025-11-27 20:14:25.625 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 16.179ms
+2025-11-27 20:14:25.646 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 53
+2025-11-27 20:14:25.648 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:25.650 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:25.650 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:25.654 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-27 20:14:25.719 +01:00 [INF] Executed DbCommand (55ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:27.227 +01:00 [INF] Executed DbCommand (14ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:27.364 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - null null
+2025-11-27 20:14:27.365 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:27.366 +01:00 [INF] HTTP OPTIONS /api/auth/csrf-token responded 204 in 1.4972 ms
+2025-11-27 20:14:27.366 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/csrf-token - 204 null null 2.6988ms
+2025-11-27 20:14:27.380 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - application/json null
+2025-11-27 20:14:27.381 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:27.381 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:27.382 +01:00 [INF] Route matched with {action = "GetToken", controller = "GetCsrfToken"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetToken() on controller Monetaris.User.Api.GetCsrfToken (Monetaris.User).
+2025-11-27 20:14:27.383 +01:00 [INF] CSRF token generated for request from ::1
+2025-11-27 20:14:27.384 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Api.CsrfTokenResponse'.
+2025-11-27 20:14:27.385 +01:00 [INF] Executed action Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User) in 1.9507ms
+2025-11-27 20:14:27.385 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.GetCsrfToken.GetToken (Monetaris.User)'
+2025-11-27 20:14:27.385 +01:00 [INF] HTTP GET /api/auth/csrf-token responded 200 in 4.3158 ms
+2025-11-27 20:14:27.385 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/auth/csrf-token - 200 null application/json; charset=utf-8 5.5643ms
+2025-11-27 20:14:27.824 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - null null
+2025-11-27 20:14:27.826 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:27.826 +01:00 [INF] HTTP OPTIONS /api/auth/login responded 204 in 0.4652 ms
+2025-11-27 20:14:27.826 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/login - 204 null null 2.5022ms
+2025-11-27 20:14:27.982 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/login - application/json 53
+2025-11-27 20:14:27.983 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:27.984 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:27.984 +01:00 [INF] Route matched with {action = "Login", controller = "Login"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LoginAsync(Monetaris.User.Models.LoginRequest) on controller Monetaris.User.Api.Login (Monetaris.User).
+2025-11-27 20:14:27.987 +01:00 [INF] Login attempt for email: admin@monetaris.com
+2025-11-27 20:14:28.097 +01:00 [INF] Executed DbCommand (106ms) [Parameters=[@__request_Email_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT u1.id, u1.avatar_initials, u1.created_at, u1.email, u1.is_active, u1.kreditor_id, u1.name, u1.password_hash, u1.role, u1.updated_at, u0.user_id, u0.kreditor_id, u0.created_at
+FROM (
+    SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+    FROM users AS u
+    WHERE u.email = @__request_Email_0
+    LIMIT 1
+) AS u1
+LEFT JOIN user_kreditor_assignments AS u0 ON u1.id = u0.user_id
+ORDER BY u1.id, u0.user_id
+2025-11-27 20:14:28.444 +01:00 [INF] Executed DbCommand (314ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?', @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO refresh_tokens (id, created_at, expires_at, revoked_at, token, updated_at, user_id)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+2025-11-27 20:14:28.460 +01:00 [INF] Login successful for email: max@monetaris.com
+2025-11-27 20:14:28.461 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Models.AuthResponse'.
+2025-11-27 20:14:28.509 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 4025.8328ms
+2025-11-27 20:14:28.509 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:28.510 +01:00 [INF] HTTP POST /api/auth/login responded 200 in 4070.3442 ms
+2025-11-27 20:14:28.510 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 200 null application/json; charset=utf-8 4071.4965ms
+2025-11-27 20:14:28.565 +01:00 [INF] Executed DbCommand (436ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?', @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO refresh_tokens (id, created_at, expires_at, revoked_at, token, updated_at, user_id)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+2025-11-27 20:14:28.567 +01:00 [INF] Login successful for email: admin@monetaris.com
+2025-11-27 20:14:28.568 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Models.AuthResponse'.
+2025-11-27 20:14:28.569 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 4093.7207ms
+2025-11-27 20:14:28.569 +01:00 [INF] Executed DbCommand (440ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?', @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO refresh_tokens (id, created_at, expires_at, revoked_at, token, updated_at, user_id)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+2025-11-27 20:14:28.569 +01:00 [INF] Executed DbCommand (398ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?', @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO refresh_tokens (id, created_at, expires_at, revoked_at, token, updated_at, user_id)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+2025-11-27 20:14:28.569 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:28.569 +01:00 [INF] HTTP POST /api/auth/login responded 200 in 4096.5932 ms
+2025-11-27 20:14:28.570 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 200 null application/json; charset=utf-8 4099.5616ms
+2025-11-27 20:14:28.618 +01:00 [INF] Login successful for email: admin@monetaris.com
+2025-11-27 20:14:28.618 +01:00 [INF] Login successful for email: client@techsolutions.de
+2025-11-27 20:14:28.618 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Models.AuthResponse'.
+2025-11-27 20:14:28.618 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Models.AuthResponse'.
+2025-11-27 20:14:28.619 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 2968.4467ms
+2025-11-27 20:14:28.619 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:28.619 +01:00 [INF] HTTP POST /api/auth/login responded 200 in 2971.1297 ms
+2025-11-27 20:14:28.620 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 200 null application/json; charset=utf-8 2973.4137ms
+2025-11-27 20:14:28.620 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 5074.272ms
+2025-11-27 20:14:28.621 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:28.621 +01:00 [INF] HTTP POST /api/auth/login responded 200 in 5153.9126 ms
+2025-11-27 20:14:28.621 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 200 null application/json; charset=utf-8 5156.8593ms
+2025-11-27 20:14:28.798 +01:00 [INF] Executed DbCommand (276ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?', @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO refresh_tokens (id, created_at, expires_at, revoked_at, token, updated_at, user_id)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+2025-11-27 20:14:28.802 +01:00 [INF] Login successful for email: admin@monetaris.com
+2025-11-27 20:14:28.802 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.User.Models.AuthResponse'.
+2025-11-27 20:14:28.803 +01:00 [INF] Executed action Monetaris.User.Api.Login.LoginAsync (Monetaris.User) in 818.6445ms
+2025-11-27 20:14:28.803 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Login.LoginAsync (Monetaris.User)'
+2025-11-27 20:14:28.803 +01:00 [INF] HTTP POST /api/auth/login responded 200 in 820.5124 ms
+2025-11-27 20:14:28.807 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/login - 200 null application/json; charset=utf-8 824.2029ms
+2025-11-27 20:14:28.813 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.813 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.814 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.814 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.814 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.7216 ms
+2025-11-27 20:14:28.815 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.7331ms
+2025-11-27 20:14:28.815 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.6988 ms
+2025-11-27 20:14:28.816 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 2.6274ms
+2025-11-27 20:14:28.818 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.820 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.821 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.8426 ms
+2025-11-27 20:14:28.821 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 2.9965ms
+2025-11-27 20:14:28.826 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:28.827 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.896 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.896 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.896 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.896 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.3647 ms
+2025-11-27 20:14:28.896 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.0013ms
+2025-11-27 20:14:28.896 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.897 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.7400 ms
+2025-11-27 20:14:28.897 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.1922ms
+2025-11-27 20:14:28.900 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:28.901 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.902 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:28.903 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.903 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.4438 ms
+2025-11-27 20:14:28.904 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.2633ms
+2025-11-27 20:14:28.912 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:28.914 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:28.923 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:28.923 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:28.925 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:28.929 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:28.929 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:28.928 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:28.931 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:28.931 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:28.931 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:28.982 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:28.983 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:28.983 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.014 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - null null
+2025-11-27 20:14:29.014 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - null null
+2025-11-27 20:14:29.014 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.015 +01:00 [INF] HTTP OPTIONS /api/cases responded 204 in 0.3235 ms
+2025-11-27 20:14:29.015 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.015 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 204 null null 0.9837ms
+2025-11-27 20:14:29.015 +01:00 [INF] HTTP OPTIONS /api/cases responded 204 in 0.4185 ms
+2025-11-27 20:14:29.015 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 204 null null 0.8104ms
+2025-11-27 20:14:29.019 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__currentUser_Id_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.kreditor_id
+FROM user_kreditor_assignments AS u
+WHERE u.user_id = @__currentUser_Id_0
+2025-11-27 20:14:29.019 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - application/json null
+2025-11-27 20:14:29.020 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.025 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:29.047 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:29.073 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId="00000000-0000-0000-0000-000000000001", Status=null, Page=1, PageSize=20
+2025-11-27 20:14:29.082 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.143 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:29.144 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.144 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.3206 ms
+2025-11-27 20:14:29.144 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.0158ms
+2025-11-27 20:14:29.152 +01:00 [INF] Executed DbCommand (140ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.154 +01:00 [INF] Executed DbCommand (142ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.184 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:29.185 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.186 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.186 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:29.187 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - null null
+2025-11-27 20:14:29.188 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.188 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:29.188 +01:00 [INF] HTTP OPTIONS /api/dashboard/statistics responded 204 in 0.2384 ms
+2025-11-27 20:14:29.189 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/dashboard/statistics - 204 null null 1.1012ms
+2025-11-27 20:14:29.287 +01:00 [INF] Executed DbCommand (194ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+WHERE c.kreditor_id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.323 +01:00 [INF] Executed DbCommand (140ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+2025-11-27 20:14:29.361 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.374 +01:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.375 +01:00 [INF] Executed DbCommand (23ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.377 +01:00 [INF] Executed DbCommand (13ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.377 +01:00 [INF] Executed DbCommand (15ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+WHERE d.kreditor_id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.392 +01:00 [INF] Executed DbCommand (12ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.392 +01:00 [INF] Executed DbCommand (12ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.393 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.393 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.393 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.393 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.393 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.393 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.397 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+WHERE k.id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.398 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000012"
+2025-11-27 20:14:29.402 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000012"
+2025-11-27 20:14:29.403 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.409 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 480.4013ms
+2025-11-27 20:14:29.409 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 480.2236ms
+2025-11-27 20:14:29.410 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.410 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.410 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 497.2888 ms
+2025-11-27 20:14:29.410 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 583.1898 ms
+2025-11-27 20:14:29.410 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 498.612ms
+2025-11-27 20:14:29.410 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 584.046ms
+2025-11-27 20:14:29.411 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 482.6817ms
+2025-11-27 20:14:29.412 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.412 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 511.6537 ms
+2025-11-27 20:14:29.412 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 512.9787ms
+2025-11-27 20:14:29.412 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:29.413 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.414 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.414 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:29.416 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:29.419 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - null null
+2025-11-27 20:14:29.421 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.421 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.421 +01:00 [INF] HTTP OPTIONS /api/inquiries responded 204 in 1.3684 ms
+2025-11-27 20:14:29.422 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - 204 null null 2.4611ms
+2025-11-27 20:14:29.424 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:29.425 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.426 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.428 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.428 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.435 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.435 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:29.436 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.436 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.436 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.437 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 250.5949ms
+2025-11-27 20:14:29.437 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.437 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 253.0830 ms
+2025-11-27 20:14:29.438 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 253.7251ms
+2025-11-27 20:14:29.438 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:29.444 +01:00 [INF] Executed DbCommand (32ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid), @__p_3='?' (DbType = Int32), @__p_2='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+    ORDER BY c.created_at DESC
+    LIMIT @__p_3 OFFSET @__p_2
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:29.444 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.475 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.495 +01:00 [INF] Executed DbCommand (17ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.496 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.497 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.497 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.498 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 83.3899ms
+2025-11-27 20:14:29.503 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.504 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 91.0052 ms
+2025-11-27 20:14:29.505 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 92.5788ms
+2025-11-27 20:14:29.521 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:29.530 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - null null
+2025-11-27 20:14:29.533 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.534 +01:00 [INF] HTTP OPTIONS /api/inquiries responded 204 in 2.1306 ms
+2025-11-27 20:14:29.534 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - 204 null null 4.4504ms
+2025-11-27 20:14:29.535 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.537 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.538 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:29.539 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:29.543 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:29.544 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.545 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.546 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:29.547 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:29.551 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.553 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:29.554 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.554 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.555 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:29.555 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:29.556 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.556 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:29.559 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.560 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.561 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:29.561 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - null null
+2025-11-27 20:14:29.561 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:29.562 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.562 +01:00 [INF] HTTP OPTIONS /api/inquiries responded 204 in 0.3996 ms
+2025-11-27 20:14:29.562 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - 204 null null 1.45ms
+2025-11-27 20:14:29.563 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.564 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - null null
+2025-11-27 20:14:29.565 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.565 +01:00 [INF] HTTP OPTIONS /api/inquiries responded 204 in 0.2632 ms
+2025-11-27 20:14:29.565 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/inquiries - 204 null null 0.6967ms
+2025-11-27 20:14:29.568 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.572 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.574 +01:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:29.575 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:29.576 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.577 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.577 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:29.580 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:29.582 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:29.583 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.584 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.584 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:29.586 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:29.598 +01:00 [INF] Executed DbCommand (27ms) [Parameters=[@__currentUser_Id_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.kreditor_id
+FROM user_kreditor_assignments AS u
+WHERE u.user_id = @__currentUser_Id_0
+2025-11-27 20:14:29.615 +01:00 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.671 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000015"
+2025-11-27 20:14:29.672 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000015" (page 1)
+2025-11-27 20:14:29.674 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:29.715 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 667.448ms
+2025-11-27 20:14:29.716 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:29.716 +01:00 [INF] HTTP GET /api/cases responded 200 in 695.8440 ms
+2025-11-27 20:14:29.716 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 200 null application/json; charset=utf-8 696.6931ms
+2025-11-27 20:14:29.728 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - application/json null
+2025-11-27 20:14:29.787 +01:00 [INF] Executed DbCommand (187ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+WHERE c.kreditor_id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.825 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.827 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:29.827 +01:00 [INF] Executed DbCommand (209ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+ORDER BY i.created_at DESC
+2025-11-27 20:14:29.827 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:29.831 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId="00000000-0000-0000-0000-000000000001", Status=null, Page=1, PageSize=20
+2025-11-27 20:14:29.841 +01:00 [INF] Executed DbCommand (15ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+WHERE d.kreditor_id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.842 +01:00 [INF] Executed DbCommand (45ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.852 +01:00 [INF] Executed DbCommand (12ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.853 +01:00 [INF] Executed DbCommand (229ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:29.855 +01:00 [INF] Executed DbCommand (13ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+WHERE k.id = ANY (@__assignedKreditorIds_0)
+2025-11-27 20:14:29.855 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000012"
+2025-11-27 20:14:29.855 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000012"
+2025-11-27 20:14:29.856 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.856 +01:00 [INF] Executed DbCommand (14ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.856 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.858 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.858 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.859 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 303.5386ms
+2025-11-27 20:14:29.859 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.859 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 305.9548 ms
+2025-11-27 20:14:29.860 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 306.5034ms
+2025-11-27 20:14:29.860 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:29.861 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.861 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.862 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:29.861 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+2025-11-27 20:14:29.862 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 324.065ms
+2025-11-27 20:14:29.862 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.862 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 331.1914 ms
+2025-11-27 20:14:29.863 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 200 null application/json; charset=utf-8 341.8636ms
+2025-11-27 20:14:29.871 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 310.4389ms
+2025-11-27 20:14:29.872 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:29.872 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 316.2841 ms
+2025-11-27 20:14:29.873 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 499 null application/json; charset=utf-8 317.6033ms
+2025-11-27 20:14:29.874 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid), @__p_3='?' (DbType = Int32), @__p_2='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+    ORDER BY c.created_at DESC
+    LIMIT @__p_3 OFFSET @__p_2
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:29.879 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:29.880 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.879 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/cases - null null
+2025-11-27 20:14:29.880 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000015"
+2025-11-27 20:14:29.881 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:29.881 +01:00 [INF] HTTP OPTIONS /api/cases responded 204 in 0.8411 ms
+2025-11-27 20:14:29.880 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000015" (page 1)
+2025-11-27 20:14:29.881 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.882 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:29.883 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:29.883 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:29.884 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 56.0235ms
+2025-11-27 20:14:29.884 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/cases - 204 null null 4.693ms
+2025-11-27 20:14:29.884 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:29.885 +01:00 [INF] HTTP GET /api/cases responded 200 in 59.7248 ms
+2025-11-27 20:14:29.885 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 200 null application/json; charset=utf-8 157.2557ms
+2025-11-27 20:14:29.885 +01:00 [INF] Executed DbCommand (11ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.887 +01:00 [INF] Executed DbCommand (24ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+ORDER BY i.created_at DESC
+2025-11-27 20:14:29.910 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.911 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:29.920 +01:00 [INF] Executed DbCommand (29ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:29.923 +01:00 [INF] Executed DbCommand (28ms) [Parameters=[@__currentUser_Id_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.kreditor_id
+FROM user_kreditor_assignments AS u
+WHERE u.user_id = @__currentUser_Id_0
+2025-11-27 20:14:29.947 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:29.948 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:29.949 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 403.2959ms
+2025-11-27 20:14:29.949 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 372.1677ms
+2025-11-27 20:14:29.950 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.950 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:29.950 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 405.9692 ms
+2025-11-27 20:14:29.950 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 374.3193 ms
+2025-11-27 20:14:29.951 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 499 null application/json; charset=utf-8 407.345ms
+2025-11-27 20:14:29.952 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 200 null application/json; charset=utf-8 377.1965ms
+2025-11-27 20:14:29.957 +01:00 [INF] Executed DbCommand (34ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+ORDER BY i.created_at DESC
+2025-11-27 20:14:29.982 +01:00 [INF] Executed DbCommand (105ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+ORDER BY i.created_at DESC
+2025-11-27 20:14:30.028 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/inquiries - application/json null
+2025-11-27 20:14:30.029 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:30.031 +01:00 [INF] Executing endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:30.032 +01:00 [INF] Route matched with {action = "Handle", controller = "GetInquiries"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Inquiry.Api.GetInquiries (Monetaris.Inquiry).
+2025-11-27 20:14:30.034 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/cases - null null
+2025-11-27 20:14:30.034 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:30.035 +01:00 [INF] HTTP OPTIONS /api/cases responded 204 in 0.2949 ms
+2025-11-27 20:14:30.035 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/cases - 204 null null 0.8012ms
+2025-11-27 20:14:30.035 +01:00 [INF] GetInquiries endpoint called
+2025-11-27 20:14:30.057 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - application/json null
+2025-11-27 20:14:30.058 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:30.059 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:30.059 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:30.064 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId="00000000-0000-0000-0000-000000000001", Status=null, Page=1, PageSize=20
+2025-11-27 20:14:30.108 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases - application/json null
+2025-11-27 20:14:30.131 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:30.133 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:30.134 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:30.136 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId=null, Status=null, Page=1, PageSize=20
+2025-11-27 20:14:30.262 +01:00 [INF] Executed DbCommand (265ms) [Parameters=[@__assignedKreditorIds_0='?' (DbType = Object)], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+WHERE c.kreditor_id = ANY (@__assignedKreditorIds_0)
+ORDER BY i.created_at DESC
+2025-11-27 20:14:30.263 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:30.264 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:30.264 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:30.265 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:30.265 +01:00 [INF] Executed DbCommand (223ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:30.266 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 383.3427ms
+2025-11-27 20:14:30.266 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 830.5505ms
+2025-11-27 20:14:30.266 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:30.266 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:30.266 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 386.6402 ms
+2025-11-27 20:14:30.266 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 841.4323 ms
+2025-11-27 20:14:30.266 +01:00 [INF] Executed DbCommand (127ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:30.266 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 499 null application/json; charset=utf-8 387.7478ms
+2025-11-27 20:14:30.266 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 499 null application/json; charset=utf-8 842.311ms
+2025-11-27 20:14:30.266 +01:00 [INF] Executed DbCommand (200ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:30.271 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+2025-11-27 20:14:30.279 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+2025-11-27 20:14:30.283 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid), @__p_3='?' (DbType = Int32), @__p_2='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+    ORDER BY c.created_at DESC
+    LIMIT @__p_3 OFFSET @__p_2
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:30.289 +01:00 [INF] Executed DbCommand (21ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT i.id, i.answer, i.case_id, i.created_at, i.created_by, i.question, i.resolved_at, i.status, i.updated_at, c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at, u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM inquiries AS i
+INNER JOIN cases AS c ON i.case_id = c.id
+INNER JOIN debtors AS d ON c.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c.kreditor_id = k.id
+INNER JOIN users AS u ON i.created_by = u.id
+ORDER BY i.created_at DESC
+2025-11-27 20:14:30.291 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000015"
+2025-11-27 20:14:30.292 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000015" (page 1)
+2025-11-27 20:14:30.292 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:30.293 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 233.311ms
+2025-11-27 20:14:30.294 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:30.294 +01:00 [INF] HTTP GET /api/cases responded 200 in 236.7505 ms
+2025-11-27 20:14:30.295 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 200 null application/json; charset=utf-8 238.0537ms
+2025-11-27 20:14:30.296 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - application/json null
+2025-11-27 20:14:30.296 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:30.298 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:30.298 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:30.302 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId="00000000-0000-0000-0000-000000000001", Status=null, Page=1, PageSize=20
+2025-11-27 20:14:30.310 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:30.310 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:30.310 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:30.311 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 279.2743ms
+2025-11-27 20:14:30.311 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:30.311 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 282.8053 ms
+2025-11-27 20:14:30.313 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 200 null application/json; charset=utf-8 285.1964ms
+2025-11-27 20:14:30.314 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+2025-11-27 20:14:30.322 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[@__currentUser_KreditorId_Value_0='?' (DbType = Guid), @__filters_KreditorId_Value_1='?' (DbType = Guid), @__p_3='?' (DbType = Int32), @__p_2='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    WHERE c.kreditor_id = @__currentUser_KreditorId_Value_0 AND c.kreditor_id = @__filters_KreditorId_Value_1
+    ORDER BY c.created_at DESC
+    LIMIT @__p_3 OFFSET @__p_2
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:30.333 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000015"
+2025-11-27 20:14:30.345 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    ORDER BY c.created_at DESC
+    LIMIT @__p_1 OFFSET @__p_0
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:31.393 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000015" (page 1)
+2025-11-27 20:14:31.393 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:31.394 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 1095.8892ms
+2025-11-27 20:14:31.394 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:31.395 +01:00 [INF] HTTP GET /api/cases responded 200 in 1098.6783 ms
+2025-11-27 20:14:31.395 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases?kreditorId=00000000-0000-0000-0000-000000000001 - 499 null application/json; charset=utf-8 1099.1588ms
+2025-11-27 20:14:30.379 +01:00 [INF] Retrieved 69 inquiries for user "00000000-0000-0000-0000-000000000012"
+2025-11-27 20:14:30.845 +01:00 [INF] Request starting HTTP/1.1 OPTIONS http://localhost:3002/api/auth/logout - null null
+2025-11-27 20:14:30.930 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - application/json null
+2025-11-27 20:14:31.398 +01:00 [INF] Executing OkObjectResult, writing value of type 'System.Collections.Generic.List`1[[Monetaris.Inquiry.Models.InquiryDto, Monetaris.Inquiry, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:31.398 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:31.398 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:31.398 +01:00 [INF] HTTP OPTIONS /api/auth/logout responded 204 in 0.4334 ms
+2025-11-27 20:14:31.398 +01:00 [INF] Request finished HTTP/1.1 OPTIONS http://localhost:3002/api/auth/logout - 204 null null 553.4641ms
+2025-11-27 20:14:31.399 +01:00 [INF] Executing endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:31.399 +01:00 [INF] Route matched with {action = "Handle", controller = "GetStatistics"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle() on controller Monetaris.Dashboard.Api.GetStatistics (Monetaris.Dashboard).
+2025-11-27 20:14:31.400 +01:00 [INF] GetStatistics endpoint called
+2025-11-27 20:14:31.406 +01:00 [INF] Executed action Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry) in 1820.7016ms
+2025-11-27 20:14:31.407 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:31.407 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000010" (page 1)
+2025-11-27 20:14:31.408 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:31.408 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 1274.0885ms
+2025-11-27 20:14:31.409 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:31.409 +01:00 [INF] HTTP GET /api/cases responded 200 in 1278.0107 ms
+2025-11-27 20:14:31.409 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:31.409 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases - 200 null application/json; charset=utf-8 1301.642ms
+2025-11-27 20:14:31.423 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+FROM cases AS c
+2025-11-27 20:14:31.430 +01:00 [INF] Request starting HTTP/1.1 POST http://localhost:3002/api/auth/logout - application/json 51
+2025-11-27 20:14:31.430 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:31.431 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/api/cases - application/json null
+2025-11-27 20:14:31.431 +01:00 [INF] CORS policy execution successful.
+2025-11-27 20:14:31.407 +01:00 [INF] Executed endpoint 'Monetaris.Inquiry.Api.GetInquiries.Handle (Monetaris.Inquiry)'
+2025-11-27 20:14:31.432 +01:00 [INF] HTTP GET /api/inquiries responded 200 in 1849.9678 ms
+2025-11-27 20:14:31.433 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/inquiries - 499 null application/json; charset=utf-8 1850.739ms
+2025-11-27 20:14:31.433 +01:00 [INF] Executing endpoint 'Monetaris.User.Api.Logout.LogoutAsync (Monetaris.User)'
+2025-11-27 20:14:31.442 +01:00 [INF] Route matched with {action = "Logout", controller = "Logout"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] LogoutAsync(Monetaris.User.Models.RefreshTokenRequest) on controller Monetaris.User.Api.Logout (Monetaris.User).
+2025-11-27 20:14:31.444 +01:00 [INF] Executing endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:31.445 +01:00 [INF] Route matched with {action = "Handle", controller = "GetAllCases"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Handle(Monetaris.Case.Models.CaseFilterRequest) on controller Monetaris.Case.Api.GetAllCases (Monetaris.Case).
+2025-11-27 20:14:31.447 +01:00 [INF] GetAllCases endpoint called with filters: KreditorId=null, Status=null, Page=1, PageSize=20
+2025-11-27 20:14:31.492 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@__p_0='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+SELECT u.id, u.avatar_initials, u.created_at, u.email, u.is_active, u.kreditor_id, u.name, u.password_hash, u.role, u.updated_at
+FROM users AS u
+WHERE u.id = @__p_0
+LIMIT 1
+2025-11-27 20:14:31.496 +01:00 [INF] Logout attempt for user: 00000000-0000-0000-0000-000000000010
+2025-11-27 20:14:31.509 +01:00 [INF] Executed DbCommand (15ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM cases AS c
+2025-11-27 20:14:31.509 +01:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM debtors AS d
+2025-11-27 20:14:31.514 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT count(*)::int
+FROM kreditoren AS k
+2025-11-27 20:14:31.515 +01:00 [INF] Retrieved dashboard stats for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:31.515 +01:00 [INF] Successfully retrieved statistics for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:31.515 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Dashboard.Models.DashboardStatsDto'.
+2025-11-27 20:14:31.516 +01:00 [INF] Executed action Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard) in 117.0153ms
+2025-11-27 20:14:31.516 +01:00 [INF] Executed endpoint 'Monetaris.Dashboard.Api.GetStatistics.Handle (Monetaris.Dashboard)'
+2025-11-27 20:14:31.517 +01:00 [INF] HTTP GET /api/dashboard/statistics responded 200 in 118.8112 ms
+2025-11-27 20:14:31.517 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/dashboard/statistics - 499 null application/json; charset=utf-8 587.3664ms
+2025-11-27 20:14:31.521 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[@__refreshToken_0='?'], CommandType='"Text"', CommandTimeout='30']
+SELECT r.id, r.created_at, r.expires_at, r.revoked_at, r.token, r.updated_at, r.user_id
+FROM refresh_tokens AS r
+WHERE r.token = @__refreshToken_0
+LIMIT 1
+2025-11-27 20:14:31.565 +01:00 [INF] Executed DbCommand (54ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT c0.id, c0.agent_id, c0.ai_analysis, c0.competent_court, c0.costs, c0.court_file_number, c0.created_at, c0.currency, c0.debtor_id, c0.due_date, c0.interest, c0.invoice_date, c0.invoice_number, c0.kreditor_id, c0.next_action_date, c0.principal_amount, c0.status, c0.updated_at, d.id, d.address_last_checked, d.address_status, d.agent_id, d.city, d.company_name, d.country, d.created_at, d.date_of_birth, d.email, d.first_name, d.is_company, d.kreditor_id, d.last_name, d.notes, d.open_cases, d.phone, d.risk_score, d.street, d.total_debt, d.updated_at, d.zip_code, k.id, k.bank_account_iban, k.contact_email, k.created_at, k.name, k.registration_number, k.updated_at
+FROM (
+    SELECT c.id, c.agent_id, c.ai_analysis, c.competent_court, c.costs, c.court_file_number, c.created_at, c.currency, c.debtor_id, c.due_date, c.interest, c.invoice_date, c.invoice_number, c.kreditor_id, c.next_action_date, c.principal_amount, c.status, c.updated_at
+    FROM cases AS c
+    ORDER BY c.created_at DESC
+    LIMIT @__p_1 OFFSET @__p_0
+) AS c0
+INNER JOIN debtors AS d ON c0.debtor_id = d.id
+INNER JOIN kreditoren AS k ON c0.kreditor_id = k.id
+ORDER BY c0.created_at DESC
+2025-11-27 20:14:31.616 +01:00 [INF] Retrieved 20 cases (page 1) for user "00000000-0000-0000-0000-000000000010"
+2025-11-27 20:14:31.616 +01:00 [INF] Retrieved 20 cases for user "00000000-0000-0000-0000-000000000010" (page 1)
+2025-11-27 20:14:31.618 +01:00 [INF] Executing OkObjectResult, writing value of type 'Monetaris.Shared.Models.PaginatedResult`1[[Monetaris.Case.Models.CaseListDto, Monetaris.Case, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]'.
+2025-11-27 20:14:31.620 +01:00 [INF] Executed action Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case) in 174.8955ms
+2025-11-27 20:14:31.680 +01:00 [INF] Executed endpoint 'Monetaris.Case.Api.GetAllCases.Handle (Monetaris.Case)'
+2025-11-27 20:14:31.682 +01:00 [INF] HTTP GET /api/cases responded 200 in 250.9929 ms
+2025-11-27 20:14:31.719 +01:00 [INF] Executed DbCommand (186ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+UPDATE refresh_tokens SET revoked_at = @p0, updated_at = @p1
+WHERE id = @p2;
+2025-11-27 20:14:31.721 +01:00 [INF] Logout successful for user: 00000000-0000-0000-0000-000000000010
+2025-11-27 20:14:31.726 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/api/cases - 200 null application/json; charset=utf-8 253.027ms
+2025-11-27 20:14:31.728 +01:00 [INF] Executing StatusCodeResult, setting HTTP status code 204
+2025-11-27 20:14:31.763 +01:00 [INF] Executed action Monetaris.User.Api.Logout.LogoutAsync (Monetaris.User) in 320.085ms
+2025-11-27 20:14:31.763 +01:00 [INF] Executed endpoint 'Monetaris.User.Api.Logout.LogoutAsync (Monetaris.User)'
+2025-11-27 20:14:31.764 +01:00 [INF] HTTP POST /api/auth/logout responded 204 in 334.4289 ms
+2025-11-27 20:14:31.765 +01:00 [INF] Request finished HTTP/1.1 POST http://localhost:3002/api/auth/logout - 204 null null 335.4963ms
+2025-11-27 20:48:51.563 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/dashboard - null null
+2025-11-27 20:48:51.613 +01:00 [INF] HTTP GET /dashboard responded 404 in 36.1537 ms
+2025-11-27 20:48:51.618 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/dashboard - 404 0 null 56.524ms
+2025-11-27 20:48:51.636 +01:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:3002/dashboard, Response status code: 404
+2025-11-27 20:49:07.283 +01:00 [INF] Request starting HTTP/1.1 GET http://localhost:3002/dashboard - null null
+2025-11-27 20:49:07.284 +01:00 [INF] HTTP GET /dashboard responded 404 in 0.3599 ms
+2025-11-27 20:49:07.285 +01:00 [INF] Request finished HTTP/1.1 GET http://localhost:3002/dashboard - 404 0 null 2.2121ms
+2025-11-27 20:49:07.287 +01:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:3002/dashboard, Response status code: 404
+2025-11-27 21:35:54.709 +01:00 [INF] Starting Monetaris API
+2025-11-27 21:35:55.686 +01:00 [INF] Applying database migrations...
+2025-11-27 21:35:57.309 +01:00 [INF] Executed DbCommand (26ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-27 21:35:57.519 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    migration_id character varying(150) NOT NULL,
+    product_version character varying(32) NOT NULL,
+    CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
+);
+2025-11-27 21:35:57.530 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-27 21:35:57.535 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2025-11-27 21:35:57.537 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-27 21:35:57.548 +01:00 [INF] No migrations were applied. The database is already up to date.
+2025-11-27 21:35:57.556 +01:00 [INF] Database migrations applied successfully
+2025-11-27 21:35:57.891 +01:00 [INF] Executed DbCommand (11ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM kreditoren AS k)
+2025-11-27 21:35:57.899 +01:00 [INF] Database already seeded, skipping...
+2025-11-27 21:35:58.040 +01:00 [INF] Monetaris API started successfully
+2025-11-27 21:35:58.074 +01:00 [INF] User profile is available. Using 'C:\Users\fandrich\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-11-27 21:35:58.183 +01:00 [INF] Now listening on: http://localhost:3002
+2025-11-27 21:35:58.184 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-11-27 21:35:58.184 +01:00 [INF] Hosting environment: Development
+2025-11-27 21:35:58.184 +01:00 [INF] Content root path: C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi

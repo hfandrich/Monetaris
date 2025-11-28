@@ -16,9 +16,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     }
 
     // DbSets
-    public DbSet<Tenant> Tenants { get; set; }
+    public DbSet<Kreditor> Kreditoren { get; set; }
     public DbSet<User> Users { get; set; }
-    public DbSet<UserTenantAssignment> UserTenantAssignments { get; set; }
+    public DbSet<UserKreditorAssignment> UserKreditorAssignments { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Debtor> Debtors { get; set; }
     public DbSet<Case> Cases { get; set; }
@@ -34,9 +34,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         // =============================================
         // Configure table names (lowercase for PostgreSQL)
         // =============================================
-        modelBuilder.Entity<Tenant>().ToTable("tenants");
+        modelBuilder.Entity<Kreditor>().ToTable("kreditoren");
         modelBuilder.Entity<User>().ToTable("users");
-        modelBuilder.Entity<UserTenantAssignment>().ToTable("user_tenant_assignments");
+        modelBuilder.Entity<UserKreditorAssignment>().ToTable("user_kreditor_assignments");
         modelBuilder.Entity<RefreshToken>().ToTable("refresh_tokens");
         modelBuilder.Entity<Debtor>().ToTable("debtors");
         modelBuilder.Entity<Case>().ToTable("cases");
@@ -81,34 +81,34 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .HasConversion<string>();
 
         // =============================================
-        // Configure composite key for UserTenantAssignment
+        // Configure composite key for UserKreditorAssignment
         // =============================================
-        modelBuilder.Entity<UserTenantAssignment>()
-            .HasKey(uta => new { uta.UserId, uta.TenantId });
+        modelBuilder.Entity<UserKreditorAssignment>()
+            .HasKey(uka => new { uka.UserId, uka.KreditorId });
 
         // =============================================
         // Configure relationships
         // =============================================
 
-        // User -> Tenant (nullable)
+        // User -> Kreditor (nullable)
         modelBuilder.Entity<User>()
-            .HasOne(u => u.Tenant)
+            .HasOne(u => u.Kreditor)
             .WithMany()
-            .HasForeignKey(u => u.TenantId)
+            .HasForeignKey(u => u.KreditorId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // UserTenantAssignment -> User
-        modelBuilder.Entity<UserTenantAssignment>()
-            .HasOne(uta => uta.User)
-            .WithMany(u => u.TenantAssignments)
-            .HasForeignKey(uta => uta.UserId)
+        // UserKreditorAssignment -> User
+        modelBuilder.Entity<UserKreditorAssignment>()
+            .HasOne(uka => uka.User)
+            .WithMany(u => u.KreditorAssignments)
+            .HasForeignKey(uka => uka.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // UserTenantAssignment -> Tenant
-        modelBuilder.Entity<UserTenantAssignment>()
-            .HasOne(uta => uta.Tenant)
+        // UserKreditorAssignment -> Kreditor
+        modelBuilder.Entity<UserKreditorAssignment>()
+            .HasOne(uka => uka.Kreditor)
             .WithMany()
-            .HasForeignKey(uta => uta.TenantId)
+            .HasForeignKey(uka => uka.KreditorId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // RefreshToken -> User
@@ -118,11 +118,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .HasForeignKey(rt => rt.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Debtor -> Tenant
+        // Debtor -> Kreditor
         modelBuilder.Entity<Debtor>()
-            .HasOne(d => d.Tenant)
-            .WithMany(t => t.Debtors)
-            .HasForeignKey(d => d.TenantId)
+            .HasOne(d => d.Kreditor)
+            .WithMany(k => k.Debtors)
+            .HasForeignKey(d => d.KreditorId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Debtor -> Agent (User)
@@ -132,11 +132,11 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
             .HasForeignKey(d => d.AgentId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Case -> Tenant
+        // Case -> Kreditor
         modelBuilder.Entity<Case>()
-            .HasOne(c => c.Tenant)
-            .WithMany(t => t.Cases)
-            .HasForeignKey(c => c.TenantId)
+            .HasOne(c => c.Kreditor)
+            .WithMany(k => k.Cases)
+            .HasForeignKey(c => c.KreditorId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Case -> Debtor
@@ -192,20 +192,20 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Role);
         modelBuilder.Entity<User>()
-            .HasIndex(u => u.TenantId);
+            .HasIndex(u => u.KreditorId);
 
-        // Tenant indexes
-        modelBuilder.Entity<Tenant>()
-            .HasIndex(t => t.ContactEmail);
-        modelBuilder.Entity<Tenant>()
-            .HasIndex(t => t.RegistrationNumber)
+        // Kreditor indexes
+        modelBuilder.Entity<Kreditor>()
+            .HasIndex(k => k.ContactEmail);
+        modelBuilder.Entity<Kreditor>()
+            .HasIndex(k => k.RegistrationNumber)
             .IsUnique();
 
-        // UserTenantAssignment indexes
-        modelBuilder.Entity<UserTenantAssignment>()
-            .HasIndex(uta => uta.UserId);
-        modelBuilder.Entity<UserTenantAssignment>()
-            .HasIndex(uta => uta.TenantId);
+        // UserKreditorAssignment indexes
+        modelBuilder.Entity<UserKreditorAssignment>()
+            .HasIndex(uka => uka.UserId);
+        modelBuilder.Entity<UserKreditorAssignment>()
+            .HasIndex(uka => uka.KreditorId);
 
         // RefreshToken indexes
         modelBuilder.Entity<RefreshToken>()
@@ -218,7 +218,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         // Debtor indexes
         modelBuilder.Entity<Debtor>()
-            .HasIndex(d => d.TenantId);
+            .HasIndex(d => d.KreditorId);
         modelBuilder.Entity<Debtor>()
             .HasIndex(d => d.AgentId);
         modelBuilder.Entity<Debtor>()
@@ -228,7 +228,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         // Case indexes
         modelBuilder.Entity<Case>()
-            .HasIndex(c => c.TenantId);
+            .HasIndex(c => c.KreditorId);
         modelBuilder.Entity<Case>()
             .HasIndex(c => c.DebtorId);
         modelBuilder.Entity<Case>()

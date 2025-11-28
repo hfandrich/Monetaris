@@ -1,10 +1,9 @@
 
-
 import React, { useState } from 'react';
 import { Button, Input, MonetarisLogo } from '../components/UI';
 import { authService } from '../services/authService';
-import { User } from '../types';
-import { ArrowRight, ShieldCheck, Search, MessageCircleQuestion, CheckCircle2, Lock, HelpCircle } from 'lucide-react';
+import { User, UserRole } from '../types';
+import { ArrowRight, ShieldCheck, Mail, MessageCircleQuestion, Lock, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface LoginProps {
@@ -12,8 +11,8 @@ interface LoginProps {
 }
 
 export const LoginDebtor: React.FC<LoginProps> = ({ onLogin }) => {
-  const [caseId, setCaseId] = useState('RE-PORTAL-TEST');
-  const [zipCode, setZipCode] = useState('10115');
+  const [email, setEmail] = useState('max@muster.de');
+  const [password, setPassword] = useState('debtor123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,10 +20,15 @@ export const LoginDebtor: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
-      const { user } = await authService.loginDebtor(caseId, zipCode);
-      if (user) onLogin(user);
+      const { user } = await authService.login(email, password);
+      if (user && user.role === UserRole.DEBTOR) {
+        onLogin(user);
+      } else {
+        setError('Kein Schuldner-Zugriff. Bitte nutzen Sie das Mitarbeiter-Login.');
+        await authService.logout();
+      }
     } catch (err: any) {
       setError(err.message || 'Zugang verweigert.');
     } finally {
@@ -108,32 +112,33 @@ export const LoginDebtor: React.FC<LoginProps> = ({ onLogin }) => {
 
              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">Aktenzeichen / Rechnungs-Nr.</label>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">E-Mail Adresse</label>
                     <div className="relative">
-                        <input 
-                            type="text"
-                            value={caseId}
-                            onChange={(e) => setCaseId(e.target.value)}
-                            placeholder="z.B. C-12345"
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="ihre@email.de"
                             className="w-full pl-12 pr-4 py-3 border rounded-xl bg-slate-50 text-slate-900 placeholder:text-slate-400 font-medium transition-all text-sm focus:bg-white focus:ring-4 focus:ring-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-white dark:placeholder:text-slate-600 dark:focus:bg-white/10 dark:focus:border-emerald-500/50 dark:focus:ring-emerald-500/10 outline-none"
                             required
+                            autoFocus
                         />
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">Ihre Postleitzahl</label>
+                    <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">Passwort</label>
                     <div className="relative">
-                        <input 
-                            type="text"
-                            value={zipCode}
-                            onChange={(e) => setZipCode(e.target.value)}
-                            placeholder="z.B. 10115"
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Ihr Passwort"
                             className="w-full pl-12 pr-4 py-3 border rounded-xl bg-slate-50 text-slate-900 placeholder:text-slate-400 font-medium transition-all text-sm focus:bg-white focus:ring-4 focus:ring-slate-100 dark:bg-white/5 dark:border-white/10 dark:text-white dark:placeholder:text-slate-600 dark:focus:bg-white/10 dark:focus:border-emerald-500/50 dark:focus:ring-emerald-500/10 outline-none"
                             required
                         />
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-slate-200 dark:bg-white/20 rounded flex items-center justify-center text-[10px] font-bold text-slate-500">#</div>
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     </div>
                 </div>
 
@@ -145,7 +150,7 @@ export const LoginDebtor: React.FC<LoginProps> = ({ onLogin }) => {
                 )}
 
                 <Button variant="glow" type="submit" className="w-full py-4 text-base rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white border-transparent shadow-emerald-500/20" loading={loading}>
-                  Zur Akte <ArrowRight className="ml-2 w-4 h-4" />
+                  Anmelden <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
              </form>
           </div>

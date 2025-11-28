@@ -29,8 +29,8 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
         RuleFor(x => x.Role)
             .IsInEnum().WithMessage("Invalid role");
 
-        RuleFor(x => x.TenantId)
-            .NotEmpty().WithMessage("Tenant ID is required for CLIENT role")
+        RuleFor(x => x.KreditorId)
+            .NotEmpty().WithMessage("Kreditor ID is required for CLIENT role")
             .When(x => x.Role == UserRole.CLIENT);
     }
 }

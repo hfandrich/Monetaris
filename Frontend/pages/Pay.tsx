@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { dataService } from '../services/dataService';
+import { casesApi, kreditorenApi } from '../services/api/apiClient';
+import type { ApiError } from '../services/api/apiClient';
 import { CollectionCase, Tenant } from '../types';
 import { Button, MonetarisLogo } from '../components/UI';
 import { CheckCircle2, ShieldCheck, Calendar, CreditCard, Smartphone, ArrowRight, AlertCircle, ChevronDown, ChevronUp, Lock } from 'lucide-react';
@@ -9,7 +10,7 @@ import { CheckCircle2, ShieldCheck, Calendar, CreditCard, Smartphone, ArrowRight
 export const Pay: React.FC = () => {
   const { caseId } = useParams<{ caseId: string }>();
   const [claim, setClaim] = useState<CollectionCase | null>(null);
-  const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [kreditor, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'HOME' | 'PLAN' | 'SUCCESS'>('HOME');
   
@@ -19,14 +20,35 @@ export const Pay: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const cases = await dataService.getCases();
-      const c = cases.find(x => x.id === caseId) || cases[0]; // Fallback for demo
-      if (c) {
-        setClaim(c);
-        const t = await dataService.getTenantById(c.tenantId);
-        setTenant(t?.tenant || null);
+      try {
+        if (caseId) {
+          // Try to get the specific case by ID
+          const caseData = await casesApi.getById(caseId);
+          if (caseData) {
+            setClaim(caseData);
+            // Get tenant info for display
+            const tenantData = await kreditorenApi.getById(caseData.kreditorId);
+            setTenant(tenantData || null);
+          }
+        } else {
+          // Fallback for demo: get first case
+          const casesResult = await casesApi.getAll();
+          const c = casesResult?.data?.[0];
+          if (c) {
+            setClaim(c);
+            const tenantData = await kreditorenApi.getById(c.kreditorId);
+            setTenant(tenantData || null);
+          }
+        }
+      } catch (err) {
+        const apiError = err as ApiError;
+        console.error('Error loading payment data:', apiError.message);
+        // For public payment page, show error gracefully
+        setClaim(null);
+        setTenant(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     load();
   }, [caseId]);

@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to navigate with HashRouter
+const hashUrl = (path: string) => `/#${path}`;
+
 test.describe('Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin
-    await page.goto('/login');
+    await page.goto(hashUrl('/login'));
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     await page.fill('input[type="email"]', 'admin@monetaris.com');
-    await page.fill('input[type="password"]', 'password');
+    await page.fill('input[type="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
+    await expect(page).toHaveURL(/.*#\/dashboard/, { timeout: 10000 });
   });
 
   test('Global search input is accessible', async ({ page }) => {
@@ -51,7 +55,7 @@ test.describe('Search Functionality', () => {
   });
 
   test('Search in cases table works', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Find search input on claims page
     const searchInput = page.locator('input[type="search"], input[placeholder*="Search"], input[placeholder*="Suche"]').first();
@@ -98,7 +102,7 @@ test.describe('Search Functionality', () => {
   });
 
   test('Empty search shows all results', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Find search input
     const searchInput = page.locator('input[type="search"], input[placeholder*="Search"], input[placeholder*="Suche"]').first();

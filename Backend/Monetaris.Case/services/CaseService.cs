@@ -33,15 +33,15 @@ public class CaseService : ICaseService
         {
             IQueryable<Shared.Models.Entities.Case> query = _context.Cases
                 .Include(c => c.Debtor)
-                .Include(c => c.Tenant);
+                .Include(c => c.Kreditor);
 
             // Role-based filtering
             query = ApplyRoleBasedFiltering(query, currentUser);
 
             // Apply filters
-            if (filters.TenantId.HasValue)
+            if (filters.KreditorId.HasValue)
             {
-                query = query.Where(c => c.TenantId == filters.TenantId.Value);
+                query = query.Where(c => c.KreditorId == filters.KreditorId.Value);
             }
 
             if (filters.DebtorId.HasValue)
@@ -96,7 +96,7 @@ public class CaseService : ICaseService
         try
         {
             var caseEntity = await _context.Cases
-                .Include(c => c.Tenant)
+                .Include(c => c.Kreditor)
                 .Include(c => c.Debtor)
                 .Include(c => c.Agent)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -129,28 +129,28 @@ public class CaseService : ICaseService
     {
         try
         {
-            // Verify tenant exists and user has access
-            var tenant = await _context.Tenants.FindAsync(request.TenantId);
-            if (tenant == null)
+            // Verify kreditor exists and user has access
+            var kreditor = await _context.Kreditoren.FindAsync(request.KreditorId);
+            if (kreditor == null)
             {
-                return Result<CaseDto>.Failure("Tenant not found");
+                return Result<CaseDto>.Failure("Kreditor not found");
             }
 
-            if (!await HasAccessToTenant(request.TenantId, currentUser))
+            if (!await HasAccessToKreditor(request.KreditorId, currentUser))
             {
-                return Result<CaseDto>.Failure("Access denied to this tenant");
+                return Result<CaseDto>.Failure("Access denied to this kreditor");
             }
 
-            // Verify debtor exists and belongs to the tenant
+            // Verify debtor exists and belongs to the kreditor
             var debtor = await _context.Debtors.FindAsync(request.DebtorId);
             if (debtor == null)
             {
                 return Result<CaseDto>.Failure("Debtor not found");
             }
 
-            if (debtor.TenantId != request.TenantId)
+            if (debtor.KreditorId != request.KreditorId)
             {
-                return Result<CaseDto>.Failure("Debtor does not belong to the specified tenant");
+                return Result<CaseDto>.Failure("Debtor does not belong to the specified kreditor");
             }
 
             // Verify agent if specified
@@ -163,18 +163,18 @@ public class CaseService : ICaseService
                 }
             }
 
-            // Check for duplicate invoice number within tenant
+            // Check for duplicate invoice number within kreditor
             var existingCase = await _context.Cases
-                .FirstOrDefaultAsync(c => c.TenantId == request.TenantId && c.InvoiceNumber == request.InvoiceNumber);
+                .FirstOrDefaultAsync(c => c.KreditorId == request.KreditorId && c.InvoiceNumber == request.InvoiceNumber);
 
             if (existingCase != null)
             {
-                return Result<CaseDto>.Failure("A case with this invoice number already exists for this tenant");
+                return Result<CaseDto>.Failure("A case with this invoice number already exists for this kreditor");
             }
 
             var caseEntity = new Shared.Models.Entities.Case
             {
-                TenantId = request.TenantId,
+                KreditorId = request.KreditorId,
                 DebtorId = request.DebtorId,
                 AgentId = request.AgentId,
                 PrincipalAmount = request.PrincipalAmount,
@@ -187,6 +187,17 @@ public class CaseService : ICaseService
                 Status = CaseStatus.NEW,
                 CompetentCourt = request.CompetentCourt,
                 CourtFileNumber = request.CourtFileNumber,
+                DateOfOrigin = request.DateOfOrigin,
+                ClaimDescription = request.ClaimDescription,
+                InterestStartDate = request.InterestStartDate,
+                InterestRate = request.InterestRate,
+                IsVariableInterest = request.IsVariableInterest,
+                InterestEndDate = request.InterestEndDate,
+                AdditionalCosts = request.AdditionalCosts,
+                ProcedureCosts = request.ProcedureCosts,
+                InterestOnCosts = request.InterestOnCosts,
+                StatuteOfLimitationsDate = request.StatuteOfLimitationsDate,
+                PaymentAllocationNotes = request.PaymentAllocationNotes,
                 NextActionDate = _workflowEngine.CalculateNextActionDate(CaseStatus.NEW)
             };
 
@@ -210,7 +221,7 @@ public class CaseService : ICaseService
 
             // Reload with navigation properties
             caseEntity = await _context.Cases
-                .Include(c => c.Tenant)
+                .Include(c => c.Kreditor)
                 .Include(c => c.Debtor)
                 .Include(c => c.Agent)
                 .FirstAsync(c => c.Id == caseEntity.Id);
@@ -233,7 +244,7 @@ public class CaseService : ICaseService
         try
         {
             var caseEntity = await _context.Cases
-                .Include(c => c.Tenant)
+                .Include(c => c.Kreditor)
                 .Include(c => c.Debtor)
                 .Include(c => c.Agent)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -261,6 +272,7 @@ public class CaseService : ICaseService
 
             // Calculate old total for debtor statistics update
             var oldTotal = caseEntity.TotalAmount;
+            var oldStatus = caseEntity.Status;
 
             caseEntity.AgentId = request.AgentId;
             caseEntity.PrincipalAmount = request.PrincipalAmount;
@@ -270,6 +282,35 @@ public class CaseService : ICaseService
             caseEntity.CompetentCourt = request.CompetentCourt;
             caseEntity.CourtFileNumber = request.CourtFileNumber;
             caseEntity.AiAnalysis = request.AiAnalysis;
+
+            // Handle status update (e.g., from Kanban drag & drop)
+            if (request.Status.HasValue && request.Status.Value != oldStatus)
+            {
+                caseEntity.Status = request.Status.Value;
+
+                // Update debtor open cases count if case is being closed
+                if (IsClosureStatus(request.Status.Value) && !IsClosureStatus(oldStatus))
+                {
+                    var debtor = caseEntity.Debtor;
+                    debtor.OpenCases -= 1;
+
+                    // If paid or settled, reduce total debt
+                    if (request.Status.Value == CaseStatus.PAID || request.Status.Value == CaseStatus.SETTLED)
+                    {
+                        debtor.TotalDebt -= caseEntity.TotalAmount;
+                    }
+                }
+
+                // Create status change history entry
+                var statusHistoryEntry = new CaseHistory
+                {
+                    CaseId = caseEntity.Id,
+                    Action = "STATUS_CHANGE",
+                    Details = $"Status changed from {oldStatus} to {request.Status.Value} (via direct update)",
+                    Actor = currentUser.Name
+                };
+                _context.CaseHistories.Add(statusHistoryEntry);
+            }
 
             // Calculate new total
             var newTotal = caseEntity.TotalAmount;
@@ -281,15 +322,18 @@ public class CaseService : ICaseService
                 debtor.TotalDebt = debtor.TotalDebt - oldTotal + newTotal;
             }
 
-            // Create audit log entry
-            var historyEntry = new CaseHistory
+            // Create general audit log entry if non-status fields changed
+            if (request.Status == null || request.Status.Value == oldStatus)
             {
-                CaseId = caseEntity.Id,
-                Action = "UPDATED",
-                Details = "Case details updated",
-                Actor = currentUser.Name
-            };
-            _context.CaseHistories.Add(historyEntry);
+                var historyEntry = new CaseHistory
+                {
+                    CaseId = caseEntity.Id,
+                    Action = "UPDATED",
+                    Details = "Case details updated",
+                    Actor = currentUser.Name
+                };
+                _context.CaseHistories.Add(historyEntry);
+            }
 
             await _context.SaveChangesAsync();
 
@@ -355,7 +399,7 @@ public class CaseService : ICaseService
         try
         {
             var caseEntity = await _context.Cases
-                .Include(c => c.Tenant)
+                .Include(c => c.Kreditor)
                 .Include(c => c.Debtor)
                 .Include(c => c.Agent)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -480,19 +524,19 @@ public class CaseService : ICaseService
     {
         if (currentUser.Role == UserRole.CLIENT)
         {
-            if (currentUser.TenantId == null)
+            if (currentUser.KreditorId == null)
             {
                 return query.Where(c => false); // Return empty
             }
-            query = query.Where(c => c.TenantId == currentUser.TenantId.Value);
+            query = query.Where(c => c.KreditorId == currentUser.KreditorId.Value);
         }
         else if (currentUser.Role == UserRole.AGENT)
         {
-            var assignedTenantIds = _context.UserTenantAssignments
-                .Where(uta => uta.UserId == currentUser.Id)
-                .Select(uta => uta.TenantId);
+            var assignedKreditorIds = _context.UserKreditorAssignments
+                .Where(uka => uka.UserId == currentUser.Id)
+                .Select(uka => uka.KreditorId);
 
-            query = query.Where(c => assignedTenantIds.Contains(c.TenantId));
+            query = query.Where(c => assignedKreditorIds.Contains(c.KreditorId));
         }
         // ADMIN sees all
 
@@ -508,19 +552,19 @@ public class CaseService : ICaseService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == caseEntity.TenantId;
+            return currentUser.KreditorId == caseEntity.KreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == caseEntity.TenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == caseEntity.KreditorId);
         }
 
         return false;
     }
 
-    private async Task<bool> HasAccessToTenant(Guid tenantId, User currentUser)
+    private async Task<bool> HasAccessToKreditor(Guid kreditorId, User currentUser)
     {
         if (currentUser.Role == UserRole.ADMIN)
         {
@@ -529,13 +573,13 @@ public class CaseService : ICaseService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == tenantId;
+            return currentUser.KreditorId == kreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == tenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == kreditorId);
         }
 
         return false;
@@ -551,14 +595,14 @@ public class CaseService : ICaseService
 
     private CaseDto MapToDto(Shared.Models.Entities.Case caseEntity)
     {
-        var debtorName = caseEntity.Debtor.IsCompany
+        var debtorName = caseEntity.Debtor.EntityType != EntityType.NATURAL_PERSON
             ? caseEntity.Debtor.CompanyName ?? "Unknown"
             : $"{caseEntity.Debtor.FirstName} {caseEntity.Debtor.LastName}";
 
         return new CaseDto
         {
             Id = caseEntity.Id,
-            TenantId = caseEntity.TenantId,
+            KreditorId = caseEntity.KreditorId,
             DebtorId = caseEntity.DebtorId,
             AgentId = caseEntity.AgentId,
             PrincipalAmount = caseEntity.PrincipalAmount,
@@ -574,9 +618,20 @@ public class CaseService : ICaseService
             CompetentCourt = caseEntity.CompetentCourt,
             CourtFileNumber = caseEntity.CourtFileNumber,
             AiAnalysis = caseEntity.AiAnalysis,
+            DateOfOrigin = caseEntity.DateOfOrigin,
+            ClaimDescription = caseEntity.ClaimDescription,
+            InterestStartDate = caseEntity.InterestStartDate,
+            InterestRate = caseEntity.InterestRate,
+            IsVariableInterest = caseEntity.IsVariableInterest,
+            InterestEndDate = caseEntity.InterestEndDate,
+            AdditionalCosts = caseEntity.AdditionalCosts,
+            ProcedureCosts = caseEntity.ProcedureCosts,
+            InterestOnCosts = caseEntity.InterestOnCosts,
+            StatuteOfLimitationsDate = caseEntity.StatuteOfLimitationsDate,
+            PaymentAllocationNotes = caseEntity.PaymentAllocationNotes,
             CreatedAt = caseEntity.CreatedAt,
             UpdatedAt = caseEntity.UpdatedAt,
-            TenantName = caseEntity.Tenant?.Name ?? string.Empty,
+            KreditorName = caseEntity.Kreditor?.Name ?? string.Empty,
             DebtorName = debtorName,
             AgentName = caseEntity.Agent?.Name
         };
@@ -584,18 +639,27 @@ public class CaseService : ICaseService
 
     private CaseListDto MapToListDto(Shared.Models.Entities.Case caseEntity)
     {
-        var debtorName = caseEntity.Debtor.IsCompany
+        var debtorName = caseEntity.Debtor.EntityType != EntityType.NATURAL_PERSON
             ? caseEntity.Debtor.CompanyName ?? "Unknown"
             : $"{caseEntity.Debtor.FirstName} {caseEntity.Debtor.LastName}";
 
         return new CaseListDto
         {
             Id = caseEntity.Id,
+            KreditorId = caseEntity.KreditorId,
             InvoiceNumber = caseEntity.InvoiceNumber,
             DebtorName = debtorName,
+            KreditorName = caseEntity.Kreditor?.Name ?? string.Empty,
             Status = caseEntity.Status,
+            PrincipalAmount = caseEntity.PrincipalAmount,
+            Costs = caseEntity.Costs,
+            Interest = caseEntity.Interest,
             TotalAmount = caseEntity.TotalAmount,
+            Currency = caseEntity.Currency,
+            InvoiceDate = caseEntity.InvoiceDate,
+            DueDate = caseEntity.DueDate,
             NextActionDate = caseEntity.NextActionDate,
+            CourtFileNumber = caseEntity.CourtFileNumber,
             CreatedAt = caseEntity.CreatedAt
         };
     }

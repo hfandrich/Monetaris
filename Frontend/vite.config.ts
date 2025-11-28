@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3000,
+        port: 4000,
         host: '0.0.0.0',
       },
       plugins: [react()],
@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
+          '@/entities': path.resolve(__dirname, './src/entities'),
+          '@/shared': path.resolve(__dirname, './src/shared'),
+          '@/routes': path.resolve(__dirname, './src/routes'),
         }
       }
     };

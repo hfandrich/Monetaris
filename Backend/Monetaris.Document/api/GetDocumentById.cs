@@ -52,7 +52,7 @@ public class GetDocumentById : ControllerBase
 
         var document = await _context.Documents
             .Include(d => d.Debtor)
-            .ThenInclude(d => d.Tenant)
+            .ThenInclude(d => d.Kreditor)
             .FirstOrDefaultAsync(d => d.Id == id);
 
         if (document == null)
@@ -102,13 +102,13 @@ public class GetDocumentById : ControllerBase
 
         if (currentUser.Role == Shared.Enums.UserRole.CLIENT)
         {
-            return currentUser.TenantId == debtor.TenantId;
+            return currentUser.KreditorId == debtor.KreditorId;
         }
 
         if (currentUser.Role == Shared.Enums.UserRole.AGENT)
         {
-            return _context.UserTenantAssignments
-                .Any(uta => uta.UserId == currentUser.Id && uta.TenantId == debtor.TenantId);
+            return _context.UserKreditorAssignments
+                .Any(uka => uka.UserId == currentUser.Id && uka.KreditorId == debtor.KreditorId);
         }
 
         return false;

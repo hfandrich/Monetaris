@@ -2,7 +2,7 @@ namespace Monetaris.User.Models;
 
 /// <summary>
 /// Request model for debtor "magic link" login
-/// Uses case number + zip code for authentication
+/// Uses case number + zip code + date of birth for multi-factor authentication
 /// </summary>
 public class LoginDebtorRequest
 {
@@ -15,4 +15,9 @@ public class LoginDebtorRequest
     /// Zip code from debtor's address
     /// </summary>
     public string ZipCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Date of birth (additional verification factor)
+    /// </summary>
+    public DateTime DateOfBirth { get; set; }
 }

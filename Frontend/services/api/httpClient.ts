@@ -1,3 +1,5 @@
+import { csrfService } from '../csrfService';
+
 export interface ApiError {
   error: string;
   errors?: Record<string, string[]>;
@@ -9,6 +11,17 @@ export class HttpClient {
     return {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
+    };
+  }
+
+  private static async getAuthHeadersWithCsrf(): Promise<HeadersInit> {
+    const token = localStorage.getItem('monetaris_token');
+    const csrfToken = await csrfService.getToken();
+
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      'X-CSRF-TOKEN': csrfToken,
     };
   }
 
@@ -27,10 +40,12 @@ export class HttpClient {
   }
 
   static async post<T>(url: string, data?: any): Promise<T> {
+    const headers = await this.getAuthHeadersWithCsrf();
     const response = await fetch(url, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers,
       body: JSON.stringify(data),
+      credentials: 'include', // Include cookies for CSRF
     });
 
     if (!response.ok) {
@@ -42,10 +57,12 @@ export class HttpClient {
   }
 
   static async put<T>(url: string, data: any): Promise<T> {
+    const headers = await this.getAuthHeadersWithCsrf();
     const response = await fetch(url, {
       method: 'PUT',
-      headers: this.getAuthHeaders(),
+      headers,
       body: JSON.stringify(data),
+      credentials: 'include', // Include cookies for CSRF
     });
 
     if (!response.ok) {
@@ -57,9 +74,11 @@ export class HttpClient {
   }
 
   static async delete(url: string): Promise<void> {
+    const headers = await this.getAuthHeadersWithCsrf();
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: this.getAuthHeaders(),
+      headers,
+      credentials: 'include', // Include cookies for CSRF
     });
 
     if (!response.ok) {

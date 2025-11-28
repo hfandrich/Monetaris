@@ -8,6 +8,11 @@ namespace Monetaris.Shared.Models.Entities;
 public class Template : BaseEntity
 {
     /// <summary>
+    /// Kreditor ID (null for global/system templates)
+    /// </summary>
+    public Guid? KreditorId { get; set; }
+
+    /// <summary>
     /// Template name
     /// </summary>
     public string Name { get; set; } = string.Empty;
@@ -36,4 +41,10 @@ public class Template : BaseEntity
     /// When the template was last modified
     /// </summary>
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
+
+    // Navigation Properties
+    /// <summary>
+    /// The kreditor this template belongs to (null for global templates)
+    /// </summary>
+    public Kreditor? Kreditor { get; set; }
 }

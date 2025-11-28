@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Badge } from './UI';
+import { QRCodeDisplay } from './QRCode';
 import { CollectionCase, CaseStatus } from '../types';
 import {
   Calculator,
@@ -309,15 +310,15 @@ export const ClaimDetailModal: React.FC<ClaimDetailModalProps> = ({
                   </button>
                 </div>
 
-                {/* QR Code Mock */}
+                {/* QR Code - Generated Locally */}
                 <div
                   className="bg-white p-4 rounded-xl border border-slate-100 flex justify-center mb-4 shadow-inner relative group cursor-pointer"
                   onClick={() => window.open(paymentLink, '_blank')}
                 >
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(paymentLink)}&color=10-15-20`}
-                    alt="Payment QR"
-                    className="w-32 h-32 mix-blend-multiply"
+                  <QRCodeDisplay
+                    data={paymentLink}
+                    size={128}
+                    className="mix-blend-multiply"
                   />
                   <div className="absolute inset-0 bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
                     <span className="text-xs font-bold text-slate-900 flex items-center gap-1">
@@ -327,12 +328,17 @@ export const ClaimDetailModal: React.FC<ClaimDetailModalProps> = ({
                 </div>
 
                 <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    readOnly
-                    value={paymentLink}
-                    className="flex-1 bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 rounded-lg px-2 text-[10px] text-slate-500 truncate focus:outline-none"
-                  />
+                  <div className="flex-1 flex items-center gap-1">
+                    <input
+                      type="text"
+                      readOnly
+                      value={paymentLink}
+                      className="flex-1 bg-slate-50 dark:bg-[#0A0A0A] border border-slate-200 dark:border-white/10 rounded-lg px-2 text-[10px] text-slate-500 truncate focus:outline-none"
+                    />
+                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold rounded-md whitespace-nowrap border border-amber-200 dark:border-amber-500/30">
+                      DEMO
+                    </span>
+                  </div>
                   <button
                     onClick={handleCopyLink}
                     className="p-2 bg-slate-100 dark:bg-[#202020] hover:bg-slate-200 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"

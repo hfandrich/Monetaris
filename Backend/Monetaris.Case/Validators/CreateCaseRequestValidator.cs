@@ -10,8 +10,8 @@ public class CreateCaseRequestValidator : AbstractValidator<CreateCaseRequest>
 {
     public CreateCaseRequestValidator()
     {
-        RuleFor(x => x.TenantId)
-            .NotEmpty().WithMessage("Tenant ID is required");
+        RuleFor(x => x.KreditorId)
+            .NotEmpty().WithMessage("Kreditor ID is required");
 
         RuleFor(x => x.DebtorId)
             .NotEmpty().WithMessage("Debtor ID is required");

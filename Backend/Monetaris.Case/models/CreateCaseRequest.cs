@@ -5,7 +5,7 @@ namespace Monetaris.Case.Models;
 /// </summary>
 public class CreateCaseRequest
 {
-    public Guid TenantId { get; set; }
+    public Guid KreditorId { get; set; }
     public Guid DebtorId { get; set; }
     public Guid? AgentId { get; set; }
 
@@ -23,4 +23,17 @@ public class CreateCaseRequest
     // Legal Information
     public string CompetentCourt { get; set; } = "Amtsgericht Coburg - Zentrales Mahngericht";
     public string? CourtFileNumber { get; set; }
+
+    // Claim Details
+    public DateTime? DateOfOrigin { get; set; }
+    public string? ClaimDescription { get; set; }
+    public DateTime? InterestStartDate { get; set; }
+    public decimal? InterestRate { get; set; }
+    public bool IsVariableInterest { get; set; } = false;
+    public DateTime? InterestEndDate { get; set; }
+    public decimal AdditionalCosts { get; set; } = 0;
+    public decimal ProcedureCosts { get; set; } = 0;
+    public bool InterestOnCosts { get; set; } = false;
+    public DateTime? StatuteOfLimitationsDate { get; set; }
+    public string? PaymentAllocationNotes { get; set; }
 }

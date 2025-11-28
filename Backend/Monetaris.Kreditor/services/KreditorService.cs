@@ -5,6 +5,7 @@ using Monetaris.Shared.Interfaces;
 using Monetaris.Shared.Models;
 using Monetaris.Shared.Models.Entities;
 using Monetaris.Kreditor.Models;
+using Monetaris.Shared.Helpers;
 
 namespace Monetaris.Kreditor.Services;
 
@@ -26,47 +27,49 @@ public class KreditorService : IKreditorService
     {
         try
         {
-            IQueryable<Tenant> query = _context.Tenants;
+            IQueryable<Shared.Models.Entities.Kreditor> query = _context.Kreditoren;
 
             // Role-based filtering
             if (currentUser.Role == UserRole.CLIENT)
             {
-                // CLIENT users can only see their own tenant
-                if (currentUser.TenantId == null)
+                // CLIENT users can only see their own kreditor
+                if (currentUser.KreditorId == null)
                 {
-                    return Result<List<KreditorDto>>.Failure("Client user has no assigned tenant");
+                    return Result<List<KreditorDto>>.Failure("Client user has no assigned kreditor");
                 }
-                query = query.Where(t => t.Id == currentUser.TenantId.Value);
+                query = query.Where(k => k.Id == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                // AGENT users can see assigned tenants
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                // AGENT users can see assigned kreditoren
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                query = query.Where(t => assignedTenantIds.Contains(t.Id));
+                query = query.Where(k => assignedKreditorIds.Contains(k.Id));
             }
-            // ADMIN sees all tenants (no filter)
+            // ADMIN sees all kreditoren (no filter)
 
-            var tenants = await query
-                .Include(t => t.Debtors)
-                .Include(t => t.Cases)
+            var kreditoren = await query
+                .Include(k => k.Debtors)
+                .Include(k => k.Cases)
                 .ToListAsync();
 
-            var kreditorDtos = tenants.Select(t => new KreditorDto
+            var kreditorDtos = kreditoren.Select(k => new KreditorDto
             {
-                Id = t.Id,
-                Name = t.Name,
-                RegistrationNumber = t.RegistrationNumber,
-                ContactEmail = t.ContactEmail,
-                BankAccountIBAN = t.BankAccountIBAN,
-                CreatedAt = t.CreatedAt,
-                UpdatedAt = t.UpdatedAt,
-                TotalDebtors = t.Debtors.Count,
-                TotalCases = t.Cases.Count,
-                TotalVolume = t.Cases.Sum(c => c.TotalAmount)
+                Id = k.Id,
+                Name = k.Name,
+                RegistrationNumber = k.RegistrationNumber,
+                ContactEmail = k.ContactEmail,
+                BankAccountIBAN = SensitiveDataHelper.CanViewFullIBAN(currentUser.Role)
+                    ? k.BankAccountIBAN
+                    : SensitiveDataHelper.MaskIBAN(k.BankAccountIBAN),
+                CreatedAt = k.CreatedAt,
+                UpdatedAt = k.UpdatedAt,
+                TotalDebtors = k.Debtors.Count,
+                TotalCases = k.Cases.Count,
+                TotalVolume = k.Cases.Sum(c => c.TotalAmount)
             }).ToList();
 
             _logger.LogInformation("Retrieved {Count} kreditoren for user {UserId} ({Role})",
@@ -85,26 +88,26 @@ public class KreditorService : IKreditorService
     {
         try
         {
-            var tenant = await _context.Tenants
-                .Include(t => t.Debtors)
-                .Include(t => t.Cases)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var kreditor = await _context.Kreditoren
+                .Include(k => k.Debtors)
+                .Include(k => k.Cases)
+                .FirstOrDefaultAsync(k => k.Id == id);
 
-            if (tenant == null)
+            if (kreditor == null)
             {
                 return Result<KreditorDto>.Failure("Kreditor not found");
             }
 
             // Authorization check
-            if (currentUser.Role == UserRole.CLIENT && currentUser.TenantId != id)
+            if (currentUser.Role == UserRole.CLIENT && currentUser.KreditorId != id)
             {
                 return Result<KreditorDto>.Failure("Access denied");
             }
 
             if (currentUser.Role == UserRole.AGENT)
             {
-                var hasAccess = await _context.UserTenantAssignments
-                    .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == id);
+                var hasAccess = await _context.UserKreditorAssignments
+                    .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == id);
 
                 if (!hasAccess)
                 {
@@ -112,18 +115,28 @@ public class KreditorService : IKreditorService
                 }
             }
 
+            // Mask IBAN based on user role
+            var showFullIBAN = SensitiveDataHelper.CanViewFullIBAN(currentUser.Role);
+            if (showFullIBAN)
+            {
+                _logger.LogInformation("Full IBAN accessed for Kreditor {KreditorId} by User {UserId} ({Role})",
+                    id, currentUser.Id, currentUser.Role);
+            }
+
             var kreditorDto = new KreditorDto
             {
-                Id = tenant.Id,
-                Name = tenant.Name,
-                RegistrationNumber = tenant.RegistrationNumber,
-                ContactEmail = tenant.ContactEmail,
-                BankAccountIBAN = tenant.BankAccountIBAN,
-                CreatedAt = tenant.CreatedAt,
-                UpdatedAt = tenant.UpdatedAt,
-                TotalDebtors = tenant.Debtors.Count,
-                TotalCases = tenant.Cases.Count,
-                TotalVolume = tenant.Cases.Sum(c => c.TotalAmount)
+                Id = kreditor.Id,
+                Name = kreditor.Name,
+                RegistrationNumber = kreditor.RegistrationNumber,
+                ContactEmail = kreditor.ContactEmail,
+                BankAccountIBAN = showFullIBAN
+                    ? kreditor.BankAccountIBAN
+                    : SensitiveDataHelper.MaskIBAN(kreditor.BankAccountIBAN),
+                CreatedAt = kreditor.CreatedAt,
+                UpdatedAt = kreditor.UpdatedAt,
+                TotalDebtors = kreditor.Debtors.Count,
+                TotalCases = kreditor.Cases.Count,
+                TotalVolume = kreditor.Cases.Sum(c => c.TotalAmount)
             };
 
             _logger.LogInformation("Retrieved kreditor {KreditorId} for user {UserId}", id, currentUser.Id);
@@ -141,22 +154,22 @@ public class KreditorService : IKreditorService
     {
         try
         {
-            // Authorization: Only ADMIN can create tenants
+            // Authorization: Only ADMIN can create kreditoren
             if (currentUser.Role != UserRole.ADMIN)
             {
                 return Result<KreditorDto>.Failure("Only administrators can create kreditoren");
             }
 
             // Check for duplicate registration number
-            var existingTenant = await _context.Tenants
-                .FirstOrDefaultAsync(t => t.RegistrationNumber == request.RegistrationNumber);
+            var existingKreditor = await _context.Kreditoren
+                .FirstOrDefaultAsync(k => k.RegistrationNumber == request.RegistrationNumber);
 
-            if (existingTenant != null)
+            if (existingKreditor != null)
             {
                 return Result<KreditorDto>.Failure("A kreditor with this registration number already exists");
             }
 
-            var tenant = new Tenant
+            var kreditor = new Shared.Models.Entities.Kreditor
             {
                 Name = request.Name,
                 RegistrationNumber = request.RegistrationNumber,
@@ -164,24 +177,24 @@ public class KreditorService : IKreditorService
                 BankAccountIBAN = request.BankAccountIBAN
             };
 
-            _context.Tenants.Add(tenant);
+            _context.Kreditoren.Add(kreditor);
             await _context.SaveChangesAsync();
 
             var kreditorDto = new KreditorDto
             {
-                Id = tenant.Id,
-                Name = tenant.Name,
-                RegistrationNumber = tenant.RegistrationNumber,
-                ContactEmail = tenant.ContactEmail,
-                BankAccountIBAN = tenant.BankAccountIBAN,
-                CreatedAt = tenant.CreatedAt,
-                UpdatedAt = tenant.UpdatedAt,
+                Id = kreditor.Id,
+                Name = kreditor.Name,
+                RegistrationNumber = kreditor.RegistrationNumber,
+                ContactEmail = kreditor.ContactEmail,
+                BankAccountIBAN = kreditor.BankAccountIBAN,
+                CreatedAt = kreditor.CreatedAt,
+                UpdatedAt = kreditor.UpdatedAt,
                 TotalDebtors = 0,
                 TotalCases = 0,
                 TotalVolume = 0
             };
 
-            _logger.LogInformation("Kreditor {KreditorId} created by user {UserId}", tenant.Id, currentUser.Id);
+            _logger.LogInformation("Kreditor {KreditorId} created by user {UserId}", kreditor.Id, currentUser.Id);
 
             return Result<KreditorDto>.Success(kreditorDto);
         }
@@ -196,50 +209,50 @@ public class KreditorService : IKreditorService
     {
         try
         {
-            // Authorization: Only ADMIN can update tenants
+            // Authorization: Only ADMIN can update kreditoren
             if (currentUser.Role != UserRole.ADMIN)
             {
                 return Result<KreditorDto>.Failure("Only administrators can update kreditoren");
             }
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Debtors)
-                .Include(t => t.Cases)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var kreditor = await _context.Kreditoren
+                .Include(k => k.Debtors)
+                .Include(k => k.Cases)
+                .FirstOrDefaultAsync(k => k.Id == id);
 
-            if (tenant == null)
+            if (kreditor == null)
             {
                 return Result<KreditorDto>.Failure("Kreditor not found");
             }
 
-            // Check for duplicate registration number (excluding current tenant)
-            var duplicateTenant = await _context.Tenants
-                .FirstOrDefaultAsync(t => t.RegistrationNumber == request.RegistrationNumber && t.Id != id);
+            // Check for duplicate registration number (excluding current kreditor)
+            var duplicateKreditor = await _context.Kreditoren
+                .FirstOrDefaultAsync(k => k.RegistrationNumber == request.RegistrationNumber && k.Id != id);
 
-            if (duplicateTenant != null)
+            if (duplicateKreditor != null)
             {
                 return Result<KreditorDto>.Failure("A kreditor with this registration number already exists");
             }
 
-            tenant.Name = request.Name;
-            tenant.RegistrationNumber = request.RegistrationNumber;
-            tenant.ContactEmail = request.ContactEmail;
-            tenant.BankAccountIBAN = request.BankAccountIBAN;
+            kreditor.Name = request.Name;
+            kreditor.RegistrationNumber = request.RegistrationNumber;
+            kreditor.ContactEmail = request.ContactEmail;
+            kreditor.BankAccountIBAN = request.BankAccountIBAN;
 
             await _context.SaveChangesAsync();
 
             var kreditorDto = new KreditorDto
             {
-                Id = tenant.Id,
-                Name = tenant.Name,
-                RegistrationNumber = tenant.RegistrationNumber,
-                ContactEmail = tenant.ContactEmail,
-                BankAccountIBAN = tenant.BankAccountIBAN,
-                CreatedAt = tenant.CreatedAt,
-                UpdatedAt = tenant.UpdatedAt,
-                TotalDebtors = tenant.Debtors.Count,
-                TotalCases = tenant.Cases.Count,
-                TotalVolume = tenant.Cases.Sum(c => c.TotalAmount)
+                Id = kreditor.Id,
+                Name = kreditor.Name,
+                RegistrationNumber = kreditor.RegistrationNumber,
+                ContactEmail = kreditor.ContactEmail,
+                BankAccountIBAN = kreditor.BankAccountIBAN,
+                CreatedAt = kreditor.CreatedAt,
+                UpdatedAt = kreditor.UpdatedAt,
+                TotalDebtors = kreditor.Debtors.Count,
+                TotalCases = kreditor.Cases.Count,
+                TotalVolume = kreditor.Cases.Sum(c => c.TotalAmount)
             };
 
             _logger.LogInformation("Kreditor {KreditorId} updated by user {UserId}", id, currentUser.Id);
@@ -257,29 +270,29 @@ public class KreditorService : IKreditorService
     {
         try
         {
-            // Authorization: Only ADMIN can delete tenants
+            // Authorization: Only ADMIN can delete kreditoren
             if (currentUser.Role != UserRole.ADMIN)
             {
                 return Result.Failure("Only administrators can delete kreditoren");
             }
 
-            var tenant = await _context.Tenants
-                .Include(t => t.Debtors)
-                .Include(t => t.Cases)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var kreditor = await _context.Kreditoren
+                .Include(k => k.Debtors)
+                .Include(k => k.Cases)
+                .FirstOrDefaultAsync(k => k.Id == id);
 
-            if (tenant == null)
+            if (kreditor == null)
             {
                 return Result.Failure("Kreditor not found");
             }
 
-            // Check if tenant has dependencies
-            if (tenant.Debtors.Any() || tenant.Cases.Any())
+            // Check if kreditor has dependencies
+            if (kreditor.Debtors.Any() || kreditor.Cases.Any())
             {
                 return Result.Failure("Cannot delete kreditor with existing debtors or cases");
             }
 
-            _context.Tenants.Remove(tenant);
+            _context.Kreditoren.Remove(kreditor);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Kreditor {KreditorId} deleted by user {UserId}", id, currentUser.Id);

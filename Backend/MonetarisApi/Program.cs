@@ -162,7 +162,6 @@ try
     builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
     // Register domain services
-    builder.Services.AddScoped<Monetaris.Tenant.Services.ITenantService, Monetaris.Tenant.Services.TenantService>();
     builder.Services.AddScoped<Monetaris.Kreditor.Services.IKreditorService, Monetaris.Kreditor.Services.KreditorService>();
     builder.Services.AddScoped<Monetaris.Debtor.Services.IDebtorService, Monetaris.Debtor.Services.DebtorService>();
     builder.Services.AddScoped<Monetaris.Document.Services.IDocumentService, Monetaris.Document.Services.DocumentService>();
@@ -173,7 +172,6 @@ try
     builder.Services.AddScoped<Monetaris.Case.Services.IWorkflowEngine, Monetaris.Case.Services.WorkflowEngine>();
 
     // Register FluentValidation validators
-    builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Tenant.Validators.CreateTenantRequestValidator>();
     builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Debtor.Validators.CreateDebtorRequestValidator>();
     builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Inquiry.Validators.CreateInquiryRequestValidator>();
     builder.Services.AddValidatorsFromAssemblyContaining<Monetaris.Template.Validators.CreateTemplateRequestValidator>();

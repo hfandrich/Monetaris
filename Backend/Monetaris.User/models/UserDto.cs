@@ -28,14 +28,14 @@ public class UserDto
     public UserRole Role { get; set; }
 
     /// <summary>
-    /// Primary tenant ID (for CLIENT role)
+    /// Primary kreditor ID (for CLIENT role)
     /// </summary>
-    public Guid? TenantId { get; set; }
+    public Guid? KreditorId { get; set; }
 
     /// <summary>
-    /// List of assigned tenant IDs (for AGENT role)
+    /// List of assigned kreditor IDs (for AGENT role)
     /// </summary>
-    public List<Guid>? AssignedTenantIds { get; set; }
+    public List<Guid>? AssignedKreditorIds { get; set; }
 
     /// <summary>
     /// Avatar initials for UI display

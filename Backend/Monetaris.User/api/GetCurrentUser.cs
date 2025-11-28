@@ -48,7 +48,7 @@ public class GetCurrentUser : ControllerBase
         }
 
         var user = await _context.Users
-            .Include(u => u.TenantAssignments)
+            .Include(u => u.KreditorAssignments)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
         if (user == null)
@@ -63,8 +63,8 @@ public class GetCurrentUser : ControllerBase
             Name = user.Name,
             Email = user.Email,
             Role = user.Role,
-            TenantId = user.TenantId,
-            AssignedTenantIds = user.TenantAssignments.Select(ta => ta.TenantId).ToList(),
+            KreditorId = user.KreditorId,
+            AssignedKreditorIds = user.KreditorAssignments.Select(ka => ka.KreditorId).ToList(),
             AvatarInitials = user.AvatarInitials
         };
 

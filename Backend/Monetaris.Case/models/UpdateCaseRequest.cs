@@ -1,3 +1,5 @@
+using Monetaris.Shared.Enums;
+
 namespace Monetaris.Case.Models;
 
 /// <summary>
@@ -17,4 +19,7 @@ public class UpdateCaseRequest
     public string CompetentCourt { get; set; } = string.Empty;
     public string? CourtFileNumber { get; set; }
     public string? AiAnalysis { get; set; }
+
+    // Status Update (for Kanban drag & drop)
+    public CaseStatus? Status { get; set; }
 }

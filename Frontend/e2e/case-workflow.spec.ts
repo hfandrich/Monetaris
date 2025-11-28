@@ -1,23 +1,27 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to navigate with HashRouter
+const hashUrl = (path: string) => `/#${path}`;
+
 test.describe('Case Workflow Management', () => {
   test.beforeEach(async ({ page }) => {
     // Login as agent before each test
-    await page.goto('/login');
+    await page.goto(hashUrl('/login'));
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     await page.fill('input[type="email"]', 'max@monetaris.com');
-    await page.fill('input[type="password"]', 'password');
+    await page.fill('input[type="password"]', 'max123');
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
+    await expect(page).toHaveURL(/.*#\/dashboard/, { timeout: 10000 });
   });
 
   test('Agent can navigate to cases page', async ({ page }) => {
     // Click on Claims/Forderungen in sidebar
-    await page.click('a[href*="/claims"]').catch(async () => {
+    await page.click('a[href*="#/claims"]').catch(async () => {
       // Fallback: look for text
       await page.click('text=/.*forderungen.*/i');
     });
 
-    await expect(page).toHaveURL(/.*claims/);
+    await expect(page).toHaveURL(/.*#\/claims/);
 
     // Verify cases table is visible
     await expect(page.locator('table, .case-list, .case-row')).toBeVisible();
@@ -25,7 +29,7 @@ test.describe('Case Workflow Management', () => {
 
   test('Agent can view case details', async ({ page }) => {
     // Navigate to cases
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for cases to load
     await page.waitForSelector('table tbody tr, .case-row', { timeout: 10000 });
@@ -40,7 +44,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Agent can filter cases by status', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for page to load
     await page.waitForTimeout(1000);
@@ -62,7 +66,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Agent can search for cases', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Find search input
     const searchInput = page.locator('input[type="search"], input[placeholder*="Search"], input[placeholder*="Suche"]').first();
@@ -77,7 +81,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Agent can view case history/audit log', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for cases to load
     await page.waitForSelector('table tbody tr, .case-row', { timeout: 10000 });
@@ -102,7 +106,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Agent can view case documents', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for cases to load
     await page.waitForSelector('table tbody tr, .case-row', { timeout: 10000 });
@@ -127,7 +131,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Case detail modal shows financial information', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for cases to load
     await page.waitForSelector('table tbody tr, .case-row', { timeout: 10000 });
@@ -149,7 +153,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Agent can close case detail modal', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for cases to load
     await page.waitForSelector('table tbody tr, .case-row', { timeout: 10000 });
@@ -171,7 +175,7 @@ test.describe('Case Workflow Management', () => {
   });
 
   test('Cases table shows key columns', async ({ page }) => {
-    await page.goto('/claims');
+    await page.goto(hashUrl('/claims'));
 
     // Wait for table to load
     await page.waitForSelector('table', { timeout: 10000 });
@@ -185,11 +189,11 @@ test.describe('Case Workflow Management', () => {
 
   test('Agent can access debtors page', async ({ page }) => {
     // Navigate to debtors
-    await page.click('a[href*="/debtors"]').catch(async () => {
+    await page.click('a[href*="#/debtors"]').catch(async () => {
       await page.click('text=/.*schuldner.*/i');
     });
 
-    await expect(page).toHaveURL(/.*debtors/);
+    await expect(page).toHaveURL(/.*#\/debtors/);
 
     // Verify debtors list is visible
     await expect(page.locator('table, .debtor-list')).toBeVisible();

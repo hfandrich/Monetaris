@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Button, Badge, Modal, Input } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { debtorsApi, casesApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
 import { CollectionCase, Debtor, Document, CaseStatus } from '../types';
 import { 
@@ -102,21 +102,42 @@ export const DebtorPortal: React.FC = () => {
   }, []);
 
   const loadData = async (currentUser: any) => {
-       const allDebtors = await dataService.getDebtors();
-       // Find debtor via email map
-       const me = allDebtors.find(d => d.email === currentUser.email);
-       
-       if (me) {
-           const allCases = await dataService.getCases();
-           const myCases = allCases.filter(c => c.debtorId === me.id);
-           setCases(myCases);
-       } else {
-           // If guest login via ID, we might have stored ID in session
-           const allCases = await dataService.getCases();
-           // Simplified: Filter by ID if user ID matches debtor ID pattern
-           if (currentUser.id.startsWith('d-')) {
-               setCases(allCases.filter(c => c.debtorId === currentUser.id));
-           }
+       try {
+         // For debtor login, the user has a debtorId that matches their debtor record
+         // The backend debtor login should associate the user with their debtor record
+
+         // First try to find debtor by user email
+         const debtorsResult = await debtorsApi.getAll({ email: currentUser.email });
+         const allDebtors = debtorsResult?.data || [];
+         const me = allDebtors.find(d => d.email === currentUser.email);
+
+         if (me) {
+             // Fetch cases for this debtor
+             const casesResult = await casesApi.getAll({ debtorId: me.id });
+             setCases(casesResult?.data || []);
+             console.log('DebtorPortal loaded by email:', {
+               debtorId: me.id,
+               casesCount: casesResult?.data?.length || 0
+             });
+         } else if (currentUser.id) {
+             // If the user ID is the debtor ID (from debtor login), use it directly
+             const casesResult = await casesApi.getAll({ debtorId: currentUser.id });
+             setCases(casesResult?.data || []);
+             console.log('DebtorPortal loaded by user ID:', {
+               userId: currentUser.id,
+               casesCount: casesResult?.data?.length || 0
+             });
+         } else {
+             // Fallback: try to load all cases the user has access to
+             const casesResult = await casesApi.getAll();
+             setCases(casesResult?.data || []);
+             console.log('DebtorPortal loaded all cases:', {
+               casesCount: casesResult?.data?.length || 0
+             });
+         }
+       } catch (err) {
+         console.error('Error loading debtor portal data:', err);
+         setCases([]);
        }
   };
 

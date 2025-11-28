@@ -10,9 +10,9 @@ namespace Monetaris.Template.Services;
 public interface ITemplateService
 {
     /// <summary>
-    /// Get all templates
+    /// Get all templates (filtered by user role and tenant access)
     /// </summary>
-    Task<Result<List<TemplateDto>>> GetAllAsync();
+    Task<Result<List<TemplateDto>>> GetAllAsync(User currentUser);
 
     /// <summary>
     /// Get a template by ID
@@ -38,4 +38,9 @@ public interface ITemplateService
     /// Render a template with variable replacement
     /// </summary>
     Task<Result<RenderTemplateResponse>> RenderAsync(Guid id, RenderTemplateRequest request, User currentUser);
+
+    /// <summary>
+    /// Render a payment template with full IBAN (ADMIN only, with audit logging)
+    /// </summary>
+    Task<Result<RenderTemplateResponse>> RenderPaymentTemplateAsync(Guid id, RenderTemplateRequest request, User currentUser);
 }

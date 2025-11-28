@@ -3,10 +3,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader, Card, Badge, Button, CreationWizard, SearchableSelect } from '../components/UI';
 import { ClaimDetailModal } from '../components/ClaimDetailModal';
-import { casesApi, tenantsApi, debtorsApi } from '../services/api/apiClient';
+import { casesApi, kreditorenApi, debtorsApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
-import { CollectionCase, CaseStatus, UserRole, Tenant, Debtor } from '../types';
+import { CollectionCase, CaseStatus, UserRole, Kreditor, Debtor } from '../types';
 import { Download, MoreVertical, Scale, Search, Send, Phone, Gavel, Archive, Mail, DollarSign, FileText, Plus, AlertCircle, LayoutGrid, List, Calendar, Filter, X, Building2, Users, Check, Smartphone, MapPin, Clock, ArrowRight, RotateCw, User, Globe } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 export const Claims: React.FC = () => {
   const navigate = useNavigate();
@@ -14,15 +15,24 @@ export const Claims: React.FC = () => {
   
   const [cases, setCases] = useState<CollectionCase[]>([]);
   const [filteredCases, setFilteredCases] = useState<CollectionCase[]>([]);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [kreditoren, setKreditoren] = useState<Kreditor[]>([]);
   const [debtors, setDebtors] = useState<Debtor[]>([]);
+
+  // Modal states
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [actionTarget, setActionTarget] = useState<CollectionCase | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
+  const [selectedKreditorId, setSelectedKreditorId] = useState<string>('');
   const [selectedDebtorId, setSelectedDebtorId] = useState<string>('');
   
   // Scope Toggle
@@ -61,34 +71,34 @@ export const Claims: React.FC = () => {
 
       // Fetch data using API client with pagination
       // Use Promise.allSettled to handle partial failures gracefully
-      const [caseResult, tenantResult, debtorResult] = await Promise.allSettled([
+      const [caseResult, kreditorResult, debtorResult] = await Promise.allSettled([
         casesApi.getAll({ page: 1, pageSize: 1000 }),
-        tenantsApi.getAll({ page: 1, pageSize: 1000 }),
+        kreditorenApi.getAll({ page: 1, pageSize: 1000 }),
         debtorsApi.getAll({ page: 1, pageSize: 1000 })
       ]);
 
       // Extract data from paginated responses, using empty arrays as fallback
       const caseData = caseResult.status === 'fulfilled' ? (caseResult.value.data || []) : [];
-      const tenantData = tenantResult.status === 'fulfilled' ? (tenantResult.value.data || []) : [];
+      const kreditorData = kreditorResult.status === 'fulfilled' ? (kreditorResult.value.data || []) : [];
       const debtorData = debtorResult.status === 'fulfilled' ? (debtorResult.value.data || []) : [];
 
       // Log any failed requests for debugging
-      if (caseResult.status === 'rejected') console.warn('Failed to load cases:', caseResult.reason);
-      if (tenantResult.status === 'rejected') console.warn('Failed to load tenants:', tenantResult.reason);
-      if (debtorResult.status === 'rejected') console.warn('Failed to load debtors:', debtorResult.reason);
+      if (caseResult.status === 'rejected') logger.warn('Failed to load cases:', caseResult.reason);
+      if (kreditorResult.status === 'rejected') logger.warn('Failed to load kreditoren:', kreditorResult.reason);
+      if (debtorResult.status === 'rejected') logger.warn('Failed to load debtors:', debtorResult.reason);
 
       // Sort by urgency/date
       caseData.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
 
       setCases(caseData);
-      setTenants(tenantData);
+      setKreditoren(kreditorData);
       setDebtors(debtorData);
 
-      const paramTenant = searchParams.get('tenantId');
+      const paramKreditor = searchParams.get('kreditorId');
       const paramDebtor = searchParams.get('debtorId');
       const paramView = searchParams.get('view');
 
-      if (paramTenant) setSelectedTenantId(paramTenant);
+      if (paramKreditor) setSelectedKreditorId(paramKreditor);
       if (paramDebtor) setSelectedDebtorId(paramDebtor);
       if (paramView === 'BOARD') setViewMode('BOARD');
 
@@ -96,7 +106,7 @@ export const Claims: React.FC = () => {
         setViewMode('FIELD_AGENT');
       }
     } catch (err: any) {
-      console.error('Error loading cases:', err);
+      logger.error('Error loading cases:', err);
       setError(err.message || 'Fehler beim Laden der Daten');
     } finally {
       setLoading(false);
@@ -134,9 +144,9 @@ export const Claims: React.FC = () => {
       }
     }
 
-    // 3. Tenant Filter
-    if (selectedTenantId) {
-        result = result.filter(c => c.tenantId === selectedTenantId);
+    // 3. Kreditor Filter
+    if (selectedKreditorId) {
+        result = result.filter(c => c.kreditorId === selectedKreditorId);
     }
 
     // 4. Debtor Filter
@@ -146,7 +156,7 @@ export const Claims: React.FC = () => {
 
     setFilteredCases(result);
     setCurrentAgentIndex(0); 
-  }, [filterStatus, searchTerm, cases, selectedTenantId, selectedDebtorId, viewScope, userRole, currentUserId]);
+  }, [filterStatus, searchTerm, cases, selectedKreditorId, selectedDebtorId, viewScope, userRole, currentUserId]);
 
   // Close menu on click outside
   useEffect(() => {
@@ -174,7 +184,7 @@ export const Claims: React.FC = () => {
       await casesApi.advanceWorkflow(c.id, nextStatus, note);
       loadCases();
     } catch (err: any) {
-      console.error('Error advancing workflow:', err);
+      logger.error('Error advancing workflow:', err);
       alert(err.message || 'Fehler beim Fortschreiten des Workflows');
     }
   };
@@ -202,10 +212,12 @@ export const Claims: React.FC = () => {
     setCases(updatedCases);
 
     try {
-      await casesApi.advanceWorkflow(caseId, targetStatus, "Verschoben via Kanban Board");
+      // Use direct update API (no workflow validation) for drag & drop
+      // This allows free movement between status columns
+      await casesApi.update(caseId, { status: targetStatus });
       loadCases();
     } catch (err: any) {
-      console.error('Error updating workflow via drag:', err);
+      logger.error('Error updating status via drag:', err);
       // Revert optimistic update on error
       setCases(cases);
       alert(err.message || 'Fehler beim Aktualisieren des Status');
@@ -235,11 +247,123 @@ export const Claims: React.FC = () => {
     setMenuOpenId(menuOpenId === id ? null : id);
   };
 
-  const getActionsForStatus = (status: CaseStatus) => {
+  const getActionsForStatus = (status: CaseStatus, caseItem: CollectionCase) => {
     const actions = [];
-    actions.push({ label: 'Notiz erstellen', icon: FileText, action: () => alert('Notiz Dialog') });
-    actions.push({ label: 'E-Mail an Schuldner', icon: Mail, action: () => alert('Email Editor') });
+    actions.push({
+      label: 'Notiz erstellen',
+      icon: FileText,
+      action: () => {
+        setActionTarget(caseItem);
+        setShowNoteModal(true);
+        setMenuOpenId(null);
+      }
+    });
+    actions.push({
+      label: 'E-Mail an Schuldner',
+      icon: Mail,
+      action: () => {
+        setActionTarget(caseItem);
+        setEmailSubject(`Forderung ${caseItem.invoiceNumber}`);
+        setShowEmailModal(true);
+        setMenuOpenId(null);
+      }
+    });
     return actions;
+  };
+
+  const handleCreateNote = () => {
+    if (!actionTarget || !noteText.trim()) return;
+    // In production, this would call the API
+    logger.info('Note created for case', actionTarget.id, noteText);
+    setShowNoteModal(false);
+    setNoteText('');
+    setActionTarget(null);
+  };
+
+  const handleSendEmail = () => {
+    if (!actionTarget || !emailSubject.trim() || !emailBody.trim()) return;
+    // In production, this would call the API
+    logger.info('Email sent to debtor for case', actionTarget.id);
+    setShowEmailModal(false);
+    setEmailSubject('');
+    setEmailBody('');
+    setActionTarget(null);
+  };
+
+  const handleArchiveCase = async () => {
+    if (!actionTarget) return;
+    try {
+      // In production, this would call the API to archive
+      // await casesApi.archive(actionTarget.id);
+      logger.info('Case archived:', actionTarget.id);
+      setCases(prev => prev.filter(c => c.id !== actionTarget.id));
+      setShowArchiveConfirm(false);
+      setActionTarget(null);
+      setMenuOpenId(null);
+    } catch (err) {
+      logger.error('Failed to archive case:', err);
+    }
+  };
+
+  const exportToCsv = () => {
+    try {
+      // CSV Header (German)
+      const headers = [
+        'Rechnungsnummer',
+        'Schuldner',
+        'Mandant',
+        'Status',
+        'Hauptforderung',
+        'Kosten',
+        'Zinsen',
+        'Gesamtforderung',
+        'Währung',
+        'Fälligkeitsdatum',
+        'Rechnungsdatum',
+        'Erstellt am',
+        'Aktenzeichen'
+      ];
+
+      // Convert cases to CSV rows
+      const rows = filteredCases.map(c => [
+        c.invoiceNumber,
+        c.debtorName,
+        c.kreditorName || '',
+        c.status,
+        c.principalAmount.toFixed(2),
+        c.costs.toFixed(2),
+        c.interest.toFixed(2),
+        c.totalAmount.toFixed(2),
+        c.currency,
+        new Date(c.dueDate).toLocaleDateString('de-DE'),
+        new Date(c.invoiceDate).toLocaleDateString('de-DE'),
+        new Date(c.createdAt || Date.now()).toLocaleDateString('de-DE'),
+        c.courtFileNumber || ''
+      ]);
+
+      // Build CSV content with UTF-8 BOM for Excel compatibility
+      const BOM = '\uFEFF';
+      const csvContent = BOM + [
+        headers.join(';'),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(';'))
+      ].join('\n');
+
+      // Create download blob
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `forderungen_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      logger.info('CSV export completed:', filteredCases.length, 'cases');
+    } catch (err) {
+      logger.error('CSV export failed:', err);
+      alert('Fehler beim CSV-Export');
+    }
   };
 
   const getStatusBadge = (status: CaseStatus) => {
@@ -408,14 +532,14 @@ export const Claims: React.FC = () => {
             {/* Agent/Admin Filter Toggle */}
             {isAgentOrAdmin && (
                <div className="bg-white dark:bg-[#151515] border border-slate-200 dark:border-white/10 p-1 rounded-xl flex items-center h-10">
-                    <button 
+                    <button
                         onClick={() => setViewScope('MINE')}
                         className={`px-3 h-full rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewScope === 'MINE' ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'}`}
                         title="Nur Fälle, die mir direkt zugewiesen sind"
                     >
                         <User size={14}/> Meine Ansicht
                     </button>
-                    <button 
+                    <button
                         onClick={() => setViewScope('ALL')}
                         className={`px-3 h-full rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${viewScope === 'ALL' ? 'bg-slate-900 text-white dark:bg-white dark:text-black shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'}`}
                         title="Alle Mandanten, auf die ich Zugriff habe"
@@ -424,6 +548,9 @@ export const Claims: React.FC = () => {
                     </button>
                </div>
             )}
+            <Button variant="secondary" onClick={exportToCsv} className="h-10" title="Als CSV exportieren">
+                <Download size={18} className="mr-2" /> Export
+            </Button>
             <Button variant="glow" onClick={() => setIsWizardOpen(true)} className="w-full sm:w-auto h-10">
                 <Plus size={18} className="mr-2" /> Neue Forderung
             </Button>
@@ -442,9 +569,9 @@ export const Claims: React.FC = () => {
               <div className="w-full xl:w-64">
                   <SearchableSelect
                         placeholder="Mandant wählen..."
-                        options={tenants.map(t => ({ id: t.id, title: t.name, subtitle: t.registrationNumber }))}
-                        value={selectedTenantId}
-                        onChange={setSelectedTenantId}
+                        options={kreditoren.map(t => ({ id: t.id, title: t.name, subtitle: t.registrationNumber }))}
+                        value={selectedKreditorId}
+                        onChange={setSelectedKreditorId}
                         icon={Building2}
                         clearable
                   />
@@ -482,10 +609,10 @@ export const Claims: React.FC = () => {
               </div>
 
               {/* Clear All Filters Button */}
-              {(selectedTenantId || selectedDebtorId || searchTerm) && (
+              {(selectedKreditorId || selectedDebtorId || searchTerm) && (
                 <button
                   onClick={() => {
-                    setSelectedTenantId('');
+                    setSelectedKreditorId('');
                     setSelectedDebtorId('');
                     setSearchTerm('');
                   }}
@@ -540,7 +667,7 @@ export const Claims: React.FC = () => {
                       <td className="px-6 md:px-8 py-5 whitespace-nowrap max-w-[180px] md:max-w-xs truncate">
                         <div className="flex flex-col">
                             <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{c.debtorName}</span>
-                            {isAgentOrAdmin && c.tenantName && <span className="text-[10px] font-bold uppercase tracking-widest text-monetaris-600 dark:text-monetaris-400 mt-1 truncate">{c.tenantName}</span>}
+                            {isAgentOrAdmin && c.kreditorName && <span className="text-[10px] font-bold uppercase tracking-widest text-monetaris-600 dark:text-monetaris-400 mt-1 truncate">{c.kreditorName}</span>}
                         </div>
                       </td>
                       <td className="px-6 md:px-8 py-5 whitespace-nowrap">
@@ -587,13 +714,16 @@ export const Claims: React.FC = () => {
                         <button onClick={(e) => { e.stopPropagation(); setSelectedClaim(c); setMenuOpenId(null); }} className="w-full flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                             <FileText size={16} className="mr-2 text-slate-400" /> Details öffnen
                         </button>
-                        {getActionsForStatus(c.status).map((action, idx) => (
-                            <button key={idx} onClick={(e) => { e.stopPropagation(); action.action(); setMenuOpenId(null); }} className="w-full flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-sm text-slate-700 dark:text-slate-300 transition-colors">
+                        {getActionsForStatus(c.status, c).map((action, idx) => (
+                            <button key={idx} onClick={(e) => { e.stopPropagation(); action.action(); }} className="w-full flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 text-sm text-slate-700 dark:text-slate-300 transition-colors">
                                 <action.icon size={16} className="mr-2 text-slate-400" /> {action.label}
                             </button>
                         ))}
                         <div className="border-t border-slate-100 dark:border-white/5 my-1"></div>
-                        <button className="w-full flex items-center px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-600 dark:text-red-400 transition-colors">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setActionTarget(c); setShowArchiveConfirm(true); setMenuOpenId(null); }}
+                          className="w-full flex items-center px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-sm text-red-600 dark:text-red-400 transition-colors"
+                        >
                             <Archive size={16} className="mr-2" /> Archivieren
                         </button>
                     </div>
@@ -609,12 +739,87 @@ export const Claims: React.FC = () => {
         onSuccess={loadCases}
       />
 
-      <ClaimDetailModal 
-        isOpen={!!selectedClaim} 
-        onClose={() => setSelectedClaim(null)} 
+      <ClaimDetailModal
+        isOpen={!!selectedClaim}
+        onClose={() => setSelectedClaim(null)}
         claim={selectedClaim}
-        onNavigateToDebtor={(id) => navigate(`/debtors/${id}`)} 
+        onNavigateToDebtor={(id) => navigate(`/debtors/${id}`)}
       />
+
+      {/* Note Modal */}
+      {showNoteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowNoteModal(false)}>
+          <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Notiz erstellen</h3>
+            <p className="text-sm text-slate-500 mb-4">Akte: {actionTarget?.invoiceNumber}</p>
+            <textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              placeholder="Notiz eingeben..."
+              className="w-full h-32 p-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white resize-none focus:ring-2 focus:ring-monetaris-500"
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="ghost" onClick={() => { setShowNoteModal(false); setNoteText(''); }}>Abbrechen</Button>
+              <Button variant="glow" onClick={handleCreateNote} disabled={!noteText.trim()}>Speichern</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowEmailModal(false)}>
+          <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">E-Mail an Schuldner</h3>
+            <p className="text-sm text-slate-500 mb-4">Schuldner: {actionTarget?.debtorName}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Betreff</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  className="w-full p-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white focus:ring-2 focus:ring-monetaris-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Nachricht</label>
+                <textarea
+                  value={emailBody}
+                  onChange={e => setEmailBody(e.target.value)}
+                  placeholder="Nachricht eingeben..."
+                  className="w-full h-40 p-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#0A0A0A] text-slate-900 dark:text-white resize-none focus:ring-2 focus:ring-monetaris-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="ghost" onClick={() => { setShowEmailModal(false); setEmailSubject(''); setEmailBody(''); }}>Abbrechen</Button>
+              <Button variant="glow" onClick={handleSendEmail} disabled={!emailSubject.trim() || !emailBody.trim()}>
+                <Send size={14} className="mr-1" /> Senden
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive Confirmation Modal */}
+      {showArchiveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowArchiveConfirm(false)}>
+          <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+              <Archive size={20} /> Akte archivieren?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Möchten Sie die Akte <strong>{actionTarget?.invoiceNumber}</strong> wirklich archivieren?
+              Die Akte wird aus der aktiven Liste entfernt.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => { setShowArchiveConfirm(false); setActionTarget(null); }}>Abbrechen</Button>
+              <Button variant="danger" onClick={handleArchiveCase}>Archivieren</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

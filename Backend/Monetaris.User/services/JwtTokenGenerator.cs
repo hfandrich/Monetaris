@@ -22,7 +22,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// <summary>
     /// Generate JWT access token with user claims
     /// </summary>
-    public string GenerateAccessToken(UserEntity user, List<Guid>? assignedTenantIds = null)
+    public string GenerateAccessToken(UserEntity user, List<Guid>? assignedKreditorIds = null)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
         var secretKey = jwtSettings["SecretKey"]
@@ -46,16 +46,16 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new Claim("role", user.Role.ToString())
         };
 
-        // Add TenantId claim if present (for CLIENT users)
-        if (user.TenantId.HasValue)
+        // Add KreditorId claim if present (for CLIENT users)
+        if (user.KreditorId.HasValue)
         {
-            claims.Add(new Claim("tenantId", user.TenantId.Value.ToString()));
+            claims.Add(new Claim("kreditorId", user.KreditorId.Value.ToString()));
         }
 
-        // Add AssignedTenantIds claim if present (for AGENT users)
-        if (assignedTenantIds != null && assignedTenantIds.Any())
+        // Add AssignedKreditorIds claim if present (for AGENT users)
+        if (assignedKreditorIds != null && assignedKreditorIds.Any())
         {
-            claims.Add(new Claim("assignedTenantIds", string.Join(",", assignedTenantIds)));
+            claims.Add(new Claim("assignedKreditorIds", string.Join(",", assignedKreditorIds)));
         }
 
         var token = new JwtSecurityToken(

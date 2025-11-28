@@ -10,7 +10,7 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-postgres"],
       "env": {
-        "POSTGRES_CONNECTION": "Host=localhost;Port=5432;Database=monetaris;Username=monetaris_user;Password=monetaris_pass"
+        "POSTGRES_CONNECTION": "Host=localhost;Port=5435;Database=monetaris;Username=monetaris_user;Password=monetaris_pass"
       },
       "description": "PostgreSQL MCP - Direct database queries for AI"
     },

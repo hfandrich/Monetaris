@@ -8,9 +8,9 @@ namespace Monetaris.Shared.Models.Entities;
 public class Debtor : BaseEntity
 {
     /// <summary>
-    /// Tenant (creditor) this debtor belongs to
+    /// Kreditor (creditor) this debtor belongs to
     /// </summary>
-    public Guid TenantId { get; set; }
+    public Guid KreditorId { get; set; }
 
     /// <summary>
     /// Agent assigned to this debtor (optional)
@@ -19,40 +19,65 @@ public class Debtor : BaseEntity
 
     // Identity Information
     /// <summary>
-    /// Whether the debtor is a company
+    /// Type of legal entity (Natural Person, Legal Entity, Partnership)
     /// </summary>
-    public bool IsCompany { get; set; }
+    public EntityType EntityType { get; set; } = EntityType.NATURAL_PERSON;
 
     /// <summary>
-    /// Company name (required if IsCompany = true)
+    /// Company name (required if EntityType = LEGAL_ENTITY)
     /// </summary>
     public string? CompanyName { get; set; }
 
     /// <summary>
-    /// First name (required if IsCompany = false)
+    /// First name (required if EntityType = NATURAL_PERSON)
     /// </summary>
     public string? FirstName { get; set; }
 
     /// <summary>
-    /// Last name (required if IsCompany = false)
+    /// Last name (required if EntityType = NATURAL_PERSON)
     /// </summary>
     public string? LastName { get; set; }
+
+    /// <summary>
+    /// Birth name / maiden name (Geburtsname)
+    /// </summary>
+    public string? BirthName { get; set; }
+
+    /// <summary>
+    /// Gender (Geschlecht m/w/d)
+    /// </summary>
+    public Gender? Gender { get; set; }
+
+    /// <summary>
+    /// Date of birth (required for debtor authentication)
+    /// </summary>
+    public DateTime? DateOfBirth { get; set; }
+
+    /// <summary>
+    /// Place of birth (Geburtsort)
+    /// </summary>
+    public string? BirthPlace { get; set; }
+
+    /// <summary>
+    /// Country of birth (Geburtsland)
+    /// </summary>
+    public string? BirthCountry { get; set; }
 
     /// <summary>
     /// Email address
     /// </summary>
     public string? Email { get; set; }
 
-    /// <summary>
-    /// Phone number
-    /// </summary>
-    public string? Phone { get; set; }
-
     // Address Information (embedded)
     /// <summary>
     /// Street address
     /// </summary>
     public string? Street { get; set; }
+
+    /// <summary>
+    /// House number (Hausnummer) - separate from Street
+    /// </summary>
+    public string? HouseNumber { get; set; }
 
     /// <summary>
     /// ZIP/Postal code
@@ -63,6 +88,36 @@ public class Debtor : BaseEntity
     /// City
     /// </summary>
     public string? City { get; set; }
+
+    /// <summary>
+    /// City district (Ortsteil)
+    /// </summary>
+    public string? CityDistrict { get; set; }
+
+    /// <summary>
+    /// Floor (Etage)
+    /// </summary>
+    public string? Floor { get; set; }
+
+    /// <summary>
+    /// Door position (Welche Tür Re/Li/Mitte)
+    /// </summary>
+    public DoorPosition? DoorPosition { get; set; }
+
+    /// <summary>
+    /// Additional address info (c/o, bei, Zusatzangaben)
+    /// </summary>
+    public string? AdditionalAddressInfo { get; set; }
+
+    /// <summary>
+    /// PO Box (Postfach)
+    /// </summary>
+    public string? POBox { get; set; }
+
+    /// <summary>
+    /// PO Box ZIP code (PLZ Postfach)
+    /// </summary>
+    public string? POBoxZipCode { get; set; }
 
     /// <summary>
     /// Country
@@ -78,6 +133,87 @@ public class Debtor : BaseEntity
     /// When the address was last verified
     /// </summary>
     public DateTime? AddressLastChecked { get; set; }
+
+    // Representative & Death Information
+    /// <summary>
+    /// Represented by (Vertreten durch - Eltern, Betreuer, Vormund)
+    /// </summary>
+    public string? RepresentedBy { get; set; }
+
+    /// <summary>
+    /// Is deceased (Verstorben)
+    /// </summary>
+    public bool IsDeceased { get; set; } = false;
+
+    /// <summary>
+    /// Place of death (Sterbeort)
+    /// </summary>
+    public string? PlaceOfDeath { get; set; }
+
+    // Extended Contact Fields
+    /// <summary>
+    /// Landline phone (Telefon Festnetz)
+    /// </summary>
+    public string? PhoneLandline { get; set; }
+
+    /// <summary>
+    /// Mobile phone (Telefon Mobil)
+    /// </summary>
+    public string? PhoneMobile { get; set; }
+
+    /// <summary>
+    /// Fax number
+    /// </summary>
+    public string? Fax { get; set; }
+
+    /// <summary>
+    /// Electronic legal communication address (Ebo-Adresse)
+    /// </summary>
+    public string? EboAddress { get; set; }
+
+    // Banking Information
+    /// <summary>
+    /// Bank IBAN
+    /// </summary>
+    public string? BankIBAN { get; set; }
+
+    /// <summary>
+    /// Bank BIC/SWIFT
+    /// </summary>
+    public string? BankBIC { get; set; }
+
+    /// <summary>
+    /// Bank name
+    /// </summary>
+    public string? BankName { get; set; }
+
+    // Legal Entity Specific Fields
+    /// <summary>
+    /// Register court (Zuständiges Handelsregister/Amtsgericht)
+    /// </summary>
+    public string? RegisterCourt { get; set; }
+
+    /// <summary>
+    /// Commercial register number (Handelsregister-Nummer)
+    /// </summary>
+    public string? RegisterNumber { get; set; }
+
+    /// <summary>
+    /// VAT ID (USt-ID-Nr)
+    /// </summary>
+    public string? VatId { get; set; }
+
+    // Partnership Specific
+    /// <summary>
+    /// JSON array of partner names (for Personengesellschaften)
+    /// </summary>
+    public string? Partners { get; set; }
+
+    // Business Reference
+    /// <summary>
+    /// File reference (Aktenzeichen)
+    /// </summary>
+    public string? FileReference { get; set; }
 
     // Risk & Statistics
     /// <summary>
@@ -102,9 +238,9 @@ public class Debtor : BaseEntity
 
     // Navigation Properties
     /// <summary>
-    /// The tenant this debtor belongs to
+    /// The kreditor this debtor belongs to
     /// </summary>
-    public Tenant Tenant { get; set; } = null!;
+    public Kreditor Kreditor { get; set; } = null!;
 
     /// <summary>
     /// The agent handling this debtor

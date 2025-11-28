@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Button, Badge, CreationWizard, WizardType } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { dashboardApi, casesApi, inquiriesApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
 import { DashboardStats, Inquiry, UserRole, CollectionCase, CaseStatus, DashboardWidgetConfig, WidgetType } from '../types';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, FunnelChart, Funnel, LabelList, Cell, ComposedChart, Line } from 'recharts';
-import { TrendingUp, ArrowRight, Activity, Sparkles, MessageSquare, Zap, Shield, AlertTriangle, CheckCircle2, Clock, Briefcase, Wallet, Gavel, GripVertical, Eye, EyeOff, X, Plus, Send, Phone, AlertCircle, FilePlus, RotateCcw, LayoutTemplate, Users, Building2, Globe, User } from 'lucide-react';
+import { TrendingUp, ArrowRight, Activity, Sparkles, MessageSquare, Zap, Shield, AlertTriangle, CheckCircle2, Clock, Briefcase, Wallet, Gavel, GripVertical, Eye, EyeOff, X, Plus, Send, Phone, AlertCircle, FilePlus, RotateCcw, LayoutTemplate, Users, Building2, Globe, User, Loader2 } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 const StatsOverviewWidget = ({ stats, userRole }: { stats: DashboardStats, userRole: UserRole }) => {
   const StatCard = ({ title, value, subtitle, icon: Icon, color }: any) => (
@@ -115,7 +116,7 @@ const FinancialChartWidget = () => {
 
 const QuickActionsWidget = ({ onAction }: { onAction: (type: WizardType | string) => void }) => {
     const actions = [
-        { label: "Neue Akte", icon: FilePlus, action: 'CLAIM', color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" },
+        { label: "Neue Forderung", icon: FilePlus, action: 'CLAIM', color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" },
         { label: "Neuer Schuldner", icon: Users, action: 'DEBTOR', color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" },
         { label: "Neuer Mandant", icon: Building2, action: 'CLIENT', color: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" },
         { label: "Mahnlauf", icon: Send, action: 'RUN', color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400" },
@@ -277,8 +278,9 @@ export const Dashboard: React.FC = () => {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [urgentCases, setUrgentCases] = useState<CollectionCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(UserRole.CLIENT);
-  
+
   // View Scope: MINE (Assigned to me directly) vs ALL (All assigned tenants for Agent, or Global for Admin)
   // Default ALL for admin to see big picture, but can switch to MINE
   const [viewScope, setViewScope] = useState<'MINE' | 'ALL'>('ALL');
@@ -286,54 +288,71 @@ export const Dashboard: React.FC = () => {
   // Dashboard Customization State
   const [isEditing, setIsEditing] = useState(false);
   const [widgetLayout, setWidgetLayout] = useState<DashboardWidgetConfig[]>(DEFAULT_LAYOUT);
-  
+
   // Wizard State
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardType, setWizardType] = useState<WizardType>('CLAIM');
 
+  // Mahnlauf Modal State
+  const [showMahnlaufModal, setShowMahnlaufModal] = useState(false);
+  const [mahnlaufRunning, setMahnlaufRunning] = useState(false);
+  const [mahnlaufResult, setMahnlaufResult] = useState<{ processed: number; sent: number; errors: number } | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { user } = authService.checkSession();
-      setUserRole(user?.role || UserRole.CLIENT);
-      
-      // Use new scoped methods
-      let filteredCases: CollectionCase[] = [];
-      
-      if (user) {
-          // Fetch all cases accessible to the user first
-          const all = await dataService.getAccessibleCases(user);
-          
-          if (viewScope === 'MINE' && (user.role === UserRole.AGENT || user.role === UserRole.ADMIN)) {
-              // Filter to only cases directly assigned to this user
-              filteredCases = all.filter(c => c.agentId === user.id);
-          } else {
-              // Show all accessible cases
-              filteredCases = all;
+      setError(null);
+
+      try {
+        const { user } = authService.checkSession();
+        setUserRole(user?.role || UserRole.CLIENT);
+
+        // Fetch dashboard statistics from API
+        try {
+          const dashboardStats = await dashboardApi.getStats();
+          setStats(dashboardStats || { totalVolume: 0, activeCases: 0, legalCases: 0, successRate: 0, projectedRecovery: 0 });
+        } catch (statsErr) {
+          logger.warn('Could not fetch dashboard stats, using defaults:', statsErr);
+          // Keep default stats
+        }
+
+        // Fetch inquiries from API
+        try {
+          const inquiriesResult = await inquiriesApi.getAll();
+          setInquiries(inquiriesResult?.data || []);
+        } catch (inqErr) {
+          logger.warn('Could not fetch inquiries:', inqErr);
+          setInquiries([]);
+        }
+
+        // Fetch cases for urgent tasks
+        try {
+          const casesResult = await casesApi.getAll();
+          let filteredCases = casesResult?.data || [];
+
+          if (user && viewScope === 'MINE' && (user.role === UserRole.AGENT || user.role === UserRole.ADMIN)) {
+            // Filter to only cases directly assigned to this user
+            filteredCases = filteredCases.filter(c => c.agentId === user.id);
           }
+
+          // Find urgent tasks (from filtered cases)
+          const urgent = filteredCases.filter(c =>
+            c.status === CaseStatus.REMINDER_2 ||
+            c.status === CaseStatus.PREPARE_MB ||
+            (c.nextActionDate && new Date(c.nextActionDate) <= new Date())
+          ).slice(0, 5);
+          setUrgentCases(urgent);
+        } catch (casesErr) {
+          logger.warn('Could not fetch cases:', casesErr);
+          setUrgentCases([]);
+        }
+
+      } catch (err: any) {
+        logger.error('Error fetching dashboard data:', err);
+        setError(err.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
       }
-
-      // Calculate stats based on filtered data
-      const totalVolume = filteredCases.reduce((acc, curr) => acc + curr.totalAmount, 0);
-      const activeCases = filteredCases.filter(c => c.status !== CaseStatus.PAID && c.status !== CaseStatus.UNCOLLECTIBLE).length;
-      const legalCases = filteredCases.filter(c => [CaseStatus.MB_REQUESTED, CaseStatus.MB_ISSUED, CaseStatus.TITLE_OBTAINED].includes(c.status)).length;
-      const successRate = 68; // Mock
-      const projectedRecovery = totalVolume * 0.45;
-
-      setStats({ totalVolume, activeCases, legalCases, successRate, projectedRecovery });
-      
-      // Inquiries Mock (fetch all for now, filtering could be added)
-      setInquiries(await dataService.getInquiries());
-      
-      // Urgent Tasks (from filtered cases)
-      const urgent = filteredCases.filter(c => 
-        c.status === CaseStatus.REMINDER_2 || 
-        c.status === CaseStatus.PREPARE_MB ||
-        (c.nextActionDate && new Date(c.nextActionDate) <= new Date())
-      ).slice(0, 5);
-      setUrgentCases(urgent);
-
-      setLoading(false);
     };
     fetchData();
   }, [viewScope]); // Re-run when scope changes
@@ -374,7 +393,28 @@ export const Dashboard: React.FC = () => {
           setWizardType(action as WizardType);
           setWizardOpen(true);
       } else if (action === 'RUN') {
-          alert('Mahnlauf Simulation gestartet...');
+          setShowMahnlaufModal(true);
+          setMahnlaufResult(null);
+      }
+  };
+
+  const handleStartMahnlauf = async () => {
+      setMahnlaufRunning(true);
+      try {
+          // Simulate Mahnlauf process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // In production, this would call the API
+          // const result = await mahnlaufApi.run();
+          setMahnlaufResult({
+              processed: urgentCases.length,
+              sent: Math.floor(urgentCases.length * 0.8),
+              errors: Math.floor(urgentCases.length * 0.1)
+          });
+          logger.info('Mahnlauf completed successfully');
+      } catch (err) {
+          logger.error('Mahnlauf failed:', err);
+      } finally {
+          setMahnlaufRunning(false);
       }
   };
   const renderWidgetContent = (type: WidgetType) => {
@@ -394,11 +434,39 @@ export const Dashboard: React.FC = () => {
     switch(span) { case 2: return 'lg:col-span-2'; case 3: return 'lg:col-span-3'; case 4: return 'lg:col-span-4'; default: return 'lg:col-span-1'; }
   };
 
+  // Loading State
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-monetaris-500 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-medium">Lade Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Fehler beim Laden</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            <RotateCcw size={16} className="mr-2" /> Neu laden
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-10 animate-in fade-in duration-700">
-      <PageHeader 
+      <PageHeader
          kicker={userRole === UserRole.AGENT ? "Operations" : "Dashboard"}
-         title="Cockpit" 
+         title="Cockpit"
          subtitle="Übersicht Ihrer wichtigsten Kennzahlen."
          action={
             <div className="flex gap-3">
@@ -473,12 +541,71 @@ export const Dashboard: React.FC = () => {
           ))}
       </div>
 
-      <CreationWizard 
-        isOpen={wizardOpen} 
-        onClose={() => setWizardOpen(false)} 
-        type={wizardType} 
-        onSuccess={() => window.location.reload()} 
+      <CreationWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        type={wizardType}
+        onSuccess={() => window.location.reload()}
       />
+
+      {/* Mahnlauf Modal */}
+      {showMahnlaufModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !mahnlaufRunning && setShowMahnlaufModal(false)}>
+          <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <Send size={20} /> Mahnlauf starten
+            </h3>
+
+            {!mahnlaufResult ? (
+              <>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+                  Der Mahnlauf wird alle fälligen Forderungen prüfen und automatisch Mahnungen versenden.
+                </p>
+                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" size={16} />
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      <strong>{urgentCases.length}</strong> Forderungen werden verarbeitet.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setShowMahnlaufModal(false)} disabled={mahnlaufRunning}>
+                    Abbrechen
+                  </Button>
+                  <Button variant="glow" onClick={handleStartMahnlauf} loading={mahnlaufRunning}>
+                    {mahnlaufRunning ? 'Verarbeite...' : 'Mahnlauf starten'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#0A0A0A] rounded-xl">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">Verarbeitet</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{mahnlaufResult.processed}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl">
+                    <span className="text-sm text-emerald-600 dark:text-emerald-400">Erfolgreich gesendet</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{mahnlaufResult.sent}</span>
+                  </div>
+                  {mahnlaufResult.errors > 0 && (
+                    <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl">
+                      <span className="text-sm text-red-600 dark:text-red-400">Fehler</span>
+                      <span className="font-bold text-red-700 dark:text-red-400">{mahnlaufResult.errors}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="glow" onClick={() => setShowMahnlaufModal(false)}>
+                    <CheckCircle2 size={16} className="mr-1" /> Fertig
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

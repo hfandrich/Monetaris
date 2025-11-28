@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Button, Badge } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { tenantsApi, casesApi } from '../services/api/apiClient';
+import type { PaginatedResult, ApiError } from '../services/api/apiClient';
 import { Tenant, CollectionCase } from '../types';
 import { Building2, Mail, CreditCard, Plus, MoreVertical, ArrowRight, Wallet, TrendingUp, Users, Search, Filter } from 'lucide-react';
 
@@ -17,17 +18,27 @@ export const Tenants: React.FC = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [cases, setCases] = useState<CollectionCase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
-      const [tenantData, caseData] = await Promise.all([
-        dataService.getTenants(),
-        dataService.getCases()
-      ]);
-      setTenants(tenantData);
-      setCases(caseData);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const [tenantData, caseData] = await Promise.all([
+          tenantsApi.getAll(),
+          casesApi.getAll()
+        ]);
+        setTenants(tenantData.data);
+        setCases(caseData.data);
+      } catch (err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Failed to load data');
+        console.error('Error loading tenants:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -73,7 +84,12 @@ export const Tenants: React.FC = () => {
         <Button variant="secondary" className="px-4"><Filter size={18} /></Button>
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="glass-panel p-12 text-center rounded-[32px] border-2 border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5">
+           <p className="text-red-600 dark:text-red-400 font-bold mb-2">Fehler beim Laden</p>
+           <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
+        </div>
+      ) : loading ? (
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1,2].map(i => (
                 <div key={i} className="h-64 bg-slate-100 dark:bg-[#151515] rounded-[32px] animate-pulse"></div>

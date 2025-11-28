@@ -1,7 +1,7 @@
 import { API_ENDPOINTS, API_BASE_URL } from './config';
 import type {
   User,
-  Tenant,
+  Kreditor,
   Debtor,
   CollectionCase,
   CommunicationTemplate,
@@ -72,23 +72,23 @@ interface BackendDebtor {
 
 interface BackendCase {
   id: string;
-  invoiceNumber: string;
+  kreditorId: string;
+  kreditorName: string;
+  debtorId: string;
   debtorName: string;
-  status: number;
-  totalAmount: number;
-  nextActionDate: string | null;
-  createdAt: string;
-  tenantId?: string;
-  tenantName?: string;
-  debtorId?: string;
-  principalAmount?: number;
-  costs?: number;
-  interest?: number;
-  invoiceDate?: string;
-  dueDate?: string;
-  courtFileNumber?: string;
   agentId?: string;
-  currency?: string;
+  invoiceNumber: string;
+  status: number;
+  principalAmount: number;
+  costs: number;
+  interest: number;
+  totalAmount: number;
+  currency: string;
+  invoiceDate: string;
+  dueDate: string;
+  nextActionDate: string | null;
+  courtFileNumber?: string;
+  createdAt: string;
 }
 
 // --- Mapping Functions ---
@@ -167,24 +167,25 @@ const transformDebtor = (backend: BackendDebtor): Debtor => {
 const transformCase = (backend: BackendCase): CollectionCase => {
   return {
     id: backend.id,
-    tenantId: backend.tenantId || '',
-    tenantName: backend.tenantName,
-    debtorId: backend.debtorId || '',
+    kreditorId: backend.kreditorId,
+    kreditorName: backend.kreditorName,
+    debtorId: backend.debtorId,
     debtorName: backend.debtorName,
     agentId: backend.agentId,
-    principalAmount: backend.principalAmount || backend.totalAmount,
-    costs: backend.costs || 0,
-    interest: backend.interest || 0,
+    principalAmount: backend.principalAmount,
+    costs: backend.costs,
+    interest: backend.interest,
     totalAmount: backend.totalAmount,
-    currency: backend.currency || 'EUR',
+    currency: backend.currency,
     invoiceNumber: backend.invoiceNumber,
-    invoiceDate: backend.invoiceDate || backend.createdAt,
-    dueDate: backend.dueDate || backend.createdAt,
+    invoiceDate: backend.invoiceDate,
+    dueDate: backend.dueDate,
     status: CASE_STATUS_MAP[backend.status] || CaseStatusEnum.NEW,
     nextActionDate: backend.nextActionDate || undefined,
     courtFileNumber: backend.courtFileNumber,
     history: [],
     aiAnalysis: undefined,
+    createdAt: backend.createdAt,
   };
 };
 
@@ -368,6 +369,21 @@ class ApiClient {
     me: (): Promise<User> => {
       return this.get<User>(API_ENDPOINTS.AUTH.ME);
     },
+
+    forgotPassword: (email: string): Promise<{ message: string; success: boolean }> => {
+      return this.post<{ message: string; success: boolean }>(
+        API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+        { email }
+      );
+    },
+
+    updateProfile: (data: { name: string; email: string }): Promise<User> => {
+      return this.put<User>(API_ENDPOINTS.AUTH.UPDATE_PROFILE, data);
+    },
+
+    updatePassword: (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+      return this.put<void>(API_ENDPOINTS.AUTH.UPDATE_PASSWORD, data);
+    },
   };
 
   // --- Dashboard API ---
@@ -484,16 +500,16 @@ class ApiClient {
     },
   };
 
-  // --- Tenants/Kreditoren API ---
+  // --- Kreditoren API ---
 
-  tenants = {
+  kreditoren = {
     getAll: async (
       filters?: Record<string, any>
-    ): Promise<PaginatedResult<Tenant>> => {
+    ): Promise<PaginatedResult<Kreditor>> => {
       const queryString = this.buildQueryString(filters);
       // Backend /api/kreditoren returns array directly, not paginated
-      const response = await this.get<Tenant[]>(
-        `${API_ENDPOINTS.TENANTS}${queryString}`
+      const response = await this.get<Kreditor[]>(
+        `${API_ENDPOINTS.KREDITOREN}${queryString}`
       );
       // Transform array to paginated result
       return {
@@ -505,20 +521,20 @@ class ApiClient {
       };
     },
 
-    getById: (id: string): Promise<Tenant> => {
-      return this.get<Tenant>(`${API_ENDPOINTS.TENANTS}/${id}`);
+    getById: (id: string): Promise<Kreditor> => {
+      return this.get<Kreditor>(`${API_ENDPOINTS.KREDITOREN}/${id}`);
     },
 
-    create: (data: Partial<Tenant>): Promise<Tenant> => {
-      return this.post<Tenant>(API_ENDPOINTS.TENANTS, data);
+    create: (data: Partial<Kreditor>): Promise<Kreditor> => {
+      return this.post<Kreditor>(API_ENDPOINTS.KREDITOREN, data);
     },
 
-    update: (id: string, data: Partial<Tenant>): Promise<Tenant> => {
-      return this.put<Tenant>(`${API_ENDPOINTS.TENANTS}/${id}`, data);
+    update: (id: string, data: Partial<Kreditor>): Promise<Kreditor> => {
+      return this.put<Kreditor>(`${API_ENDPOINTS.KREDITOREN}/${id}`, data);
     },
 
     delete: (id: string): Promise<void> => {
-      return this.delete<void>(`${API_ENDPOINTS.TENANTS}/${id}`);
+      return this.delete<void>(`${API_ENDPOINTS.KREDITOREN}/${id}`);
     },
   };
 
@@ -529,9 +545,19 @@ class ApiClient {
       filters?: Record<string, any>
     ): Promise<PaginatedResult<CommunicationTemplate>> => {
       const queryString = this.buildQueryString(filters);
-      const response = await this.get<BackendPaginatedResponse<CommunicationTemplate>>(
+      const response = await this.get<CommunicationTemplate[] | BackendPaginatedResponse<CommunicationTemplate>>(
         `${API_ENDPOINTS.TEMPLATES}${queryString}`
       );
+      // Backend returns array directly, not paginated - handle both cases
+      if (Array.isArray(response)) {
+        return {
+          data: response,
+          total: response.length,
+          page: 1,
+          pageSize: response.length,
+          totalPages: 1,
+        };
+      }
       return transformPaginatedResponse(response);
     },
 
@@ -576,9 +602,19 @@ class ApiClient {
       filters?: Record<string, any>
     ): Promise<PaginatedResult<Document>> => {
       const queryString = this.buildQueryString(filters);
-      const response = await this.get<BackendPaginatedResponse<Document>>(
+      const response = await this.get<Document[] | BackendPaginatedResponse<Document>>(
         `${API_ENDPOINTS.DOCUMENTS}${queryString}`
       );
+      // Backend returns array directly, not paginated - handle both cases
+      if (Array.isArray(response)) {
+        return {
+          data: response,
+          total: response.length,
+          page: 1,
+          pageSize: response.length,
+          totalPages: 1,
+        };
+      }
       return transformPaginatedResponse(response);
     },
 
@@ -629,9 +665,19 @@ class ApiClient {
       filters?: Record<string, any>
     ): Promise<PaginatedResult<Inquiry>> => {
       const queryString = this.buildQueryString(filters);
-      const response = await this.get<BackendPaginatedResponse<Inquiry>>(
+      const response = await this.get<Inquiry[] | BackendPaginatedResponse<Inquiry>>(
         `${API_ENDPOINTS.INQUIRIES}${queryString}`
       );
+      // Backend returns array directly, not paginated - handle both cases
+      if (Array.isArray(response)) {
+        return {
+          data: response,
+          total: response.length,
+          page: 1,
+          pageSize: response.length,
+          totalPages: 1,
+        };
+      }
       return transformPaginatedResponse(response);
     },
 
@@ -675,7 +721,7 @@ export const {
   dashboard: dashboardApi,
   debtors: debtorsApi,
   cases: casesApi,
-  tenants: tenantsApi,
+  kreditoren: kreditorenApi,
   templates: templatesApi,
   documents: documentsApi,
   inquiries: inquiriesApi,

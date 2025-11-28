@@ -1,24 +1,155 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Button, Input, Badge } from '../components/UI';
 import { User, UserRole } from '../types';
 import { authService } from '../services/authService';
-import { User as UserIcon, Shield, Bell, Lock, LogOut, Check, Mail, Smartphone } from 'lucide-react';
+import apiClient from '../services/api/apiClient';
+import { User as UserIcon, Shield, Bell, Lock, LogOut, Check, Mail, Smartphone, Upload, AlertTriangle } from 'lucide-react';
 
 export const Settings: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'SECURITY' | 'NOTIFICATIONS'>('PROFILE');
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const { user } = authService.checkSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
+  // Profile state
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    department: 'Finance & Legal',
+    profileImage: ''
+  });
+
+  // Security state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
+
+  // Notifications state
+  const [notifications, setNotifications] = useState({
+    newCases: true,
+    statusUpdates: true,
+    payments: true,
+    system: false
+  });
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  // Load notification settings from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('monetaris_notifications');
+    if (saved) {
+      setNotifications(JSON.parse(saved));
+    }
+  }, []);
+
+  const handleSave = async () => {
     setLoading(true);
-    // Simulate API Call
-    setTimeout(() => {
-      setLoading(false);
+    setErrorMsg('');
+    try {
+      await apiClient.auth.updateProfile({
+        name: profileData.name,
+        email: user?.email || ''
+      });
       setSuccessMsg('Einstellungen erfolgreich gespeichert.');
       setTimeout(() => setSuccessMsg(''), 3000);
-    }, 800);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Fehler beim Speichern der Einstellungen.';
+      setErrorMsg(errorMessage);
+      setTimeout(() => setErrorMsg(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrorMsg('Bild darf maximal 5MB groß sein.');
+        setTimeout(() => setErrorMsg(''), 3000);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData(prev => ({ ...prev, profileImage: reader.result as string }));
+        setSuccessMsg('Profilbild aktualisiert. Speichern nicht vergessen!');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleToggle2FA = () => {
+    setErrorMsg('2-Faktor-Authentifizierung wird bald verfügbar sein.');
+    setTimeout(() => setErrorMsg(''), 3000);
+  };
+
+  const handleConfirm2FA = () => {
+    setTwoFactorEnabled(true);
+    setShowTwoFactorSetup(false);
+    setSuccessMsg('2-Faktor-Authentifizierung aktiviert!');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handleNotificationToggle = (key: keyof typeof notifications) => {
+    const newNotifications = { ...notifications, [key]: !notifications[key] };
+    setNotifications(newNotifications);
+    localStorage.setItem('monetaris_notifications', JSON.stringify(newNotifications));
+    setSuccessMsg('Benachrichtigungseinstellung gespeichert.');
+    setTimeout(() => setSuccessMsg(''), 3000);
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setErrorMsg('Passwörter stimmen nicht überein.');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      setErrorMsg('Passwort muss mindestens 8 Zeichen haben.');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiClient.auth.updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setSuccessMsg('Passwort erfolgreich geändert.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Fehler beim Ändern des Passworts.';
+      setErrorMsg(errorMessage);
+      setTimeout(() => setErrorMsg(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText !== 'LÖSCHEN') {
+      setErrorMsg('Bitte geben Sie "LÖSCHEN" ein zur Bestätigung.');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
+    authService.logout();
+    navigate('/login');
   };
 
   const tabs = [
@@ -64,6 +195,11 @@ export const Settings: React.FC = () => {
                   <Check size={16} className="mr-2" /> {successMsg}
                 </div>
               )}
+              {errorMsg && (
+                <div className="mb-6 bg-red-100 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl flex items-center text-sm font-bold animate-in slide-in-from-top-2">
+                  <AlertTriangle size={16} className="mr-2" /> {errorMsg}
+                </div>
+              )}
 
               {activeTab === 'PROFILE' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -73,12 +209,25 @@ export const Settings: React.FC = () => {
                    </div>
                    
                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-[#151515] flex items-center justify-center text-slate-400 text-2xl font-bold border-2 border-dashed border-slate-300 dark:border-white/10 shrink-0">
-                         {user?.name.charAt(0)}
+                      <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-[#151515] flex items-center justify-center text-slate-400 text-2xl font-bold border-2 border-dashed border-slate-300 dark:border-white/10 shrink-0 overflow-hidden">
+                         {profileData.profileImage ? (
+                           <img src={profileData.profileImage} alt="Profil" className="w-full h-full object-cover" />
+                         ) : (
+                           user?.name.charAt(0)
+                         )}
                       </div>
                       <div>
-                         <Button variant="secondary" size="sm">Bild ändern</Button>
-                         <p className="text-xs text-slate-400 mt-2">Empfohlen: 400x400px, JPG oder PNG.</p>
+                         <input
+                           type="file"
+                           ref={fileInputRef}
+                           onChange={handleFileChange}
+                           accept="image/*"
+                           className="hidden"
+                         />
+                         <Button variant="secondary" size="sm" onClick={handleImageUpload}>
+                           <Upload size={14} className="mr-1" /> Bild ändern
+                         </Button>
+                         <p className="text-xs text-slate-400 mt-2">Empfohlen: 400x400px, JPG oder PNG (max 5MB).</p>
                       </div>
                    </div>
 
@@ -99,9 +248,35 @@ export const Settings: React.FC = () => {
                    </div>
 
                    <div className="space-y-6 max-w-md">
-                      <Input label="Aktuelles Passwort" type="password" placeholder="••••••••" />
-                      <Input label="Neues Passwort" type="password" placeholder="••••••••" />
-                      <Input label="Passwort bestätigen" type="password" placeholder="••••••••" />
+                      <Input
+                        label="Aktuelles Passwort"
+                        type="password"
+                        placeholder="••••••••"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      />
+                      <Input
+                        label="Neues Passwort"
+                        type="password"
+                        placeholder="••••••••"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      />
+                      <Input
+                        label="Passwort bestätigen"
+                        type="password"
+                        placeholder="••••••••"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      />
+                      <Button
+                        variant="secondary"
+                        onClick={handlePasswordChange}
+                        loading={loading}
+                        disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                      >
+                        Passwort ändern
+                      </Button>
                    </div>
 
                    <div className="pt-6 border-t border-slate-100 dark:border-white/5">
@@ -113,8 +288,30 @@ export const Settings: React.FC = () => {
                             <p className="text-sm font-bold text-slate-900 dark:text-white">Authenticator App</p>
                             <p className="text-xs text-slate-500 mt-1">Sichern Sie Ihren Account mit Google Authenticator.</p>
                          </div>
-                         <Badge color="gray">Inaktiv</Badge>
+                         <button onClick={handleToggle2FA}>
+                           <Badge color={twoFactorEnabled ? "green" : "gray"}>
+                             {twoFactorEnabled ? "Aktiv" : "Inaktiv"}
+                           </Badge>
+                         </button>
                       </div>
+
+                      {showTwoFactorSetup && (
+                        <div className="mt-4 p-4 bg-slate-50 dark:bg-[#151515] rounded-xl border border-slate-100 dark:border-white/5">
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                            Scannen Sie den QR-Code mit Ihrer Authenticator-App und geben Sie den Code ein.
+                          </p>
+                          <div className="flex items-center justify-center mb-4 p-4 bg-white dark:bg-black rounded-lg">
+                            <div className="w-32 h-32 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-xs text-slate-500">
+                              [QR-Code Placeholder]
+                            </div>
+                          </div>
+                          <Input label="Verifizierungscode" placeholder="000000" className="mb-4" />
+                          <div className="flex gap-2">
+                            <Button variant="secondary" size="sm" onClick={() => setShowTwoFactorSetup(false)}>Abbrechen</Button>
+                            <Button variant="glow" size="sm" onClick={handleConfirm2FA}>Aktivieren</Button>
+                          </div>
+                        </div>
+                      )}
                    </div>
                  </div>
               )}
@@ -128,12 +325,16 @@ export const Settings: React.FC = () => {
 
                    <div className="space-y-4">
                       {[
-                        { title: "Neue Aktenübergabe", desc: "Wenn ein Mandant eine neue Forderung einstellt." },
-                        { title: "Status-Updates", desc: "Bei Änderungen im Mahnstatus (z.B. Fristablauf)." },
-                        { title: "Zahlungseingang", desc: "Sobald eine Teil- oder Vollzahlung verbucht wurde." },
-                        { title: "Systemnachrichten", desc: "Wartungsarbeiten und wichtige Sicherheitsupdates." }
-                      ].map((setting, i) => (
-                        <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-[#151515] rounded-xl transition-colors cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-white/5">
+                        { key: 'newCases' as const, title: "Neue Aktenübergabe", desc: "Wenn ein Mandant eine neue Forderung einstellt." },
+                        { key: 'statusUpdates' as const, title: "Status-Updates", desc: "Bei Änderungen im Mahnstatus (z.B. Fristablauf)." },
+                        { key: 'payments' as const, title: "Zahlungseingang", desc: "Sobald eine Teil- oder Vollzahlung verbucht wurde." },
+                        { key: 'system' as const, title: "Systemnachrichten", desc: "Wartungsarbeiten und wichtige Sicherheitsupdates." }
+                      ].map((setting) => (
+                        <div
+                          key={setting.key}
+                          onClick={() => handleNotificationToggle(setting.key)}
+                          className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-[#151515] rounded-xl transition-colors cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-white/5"
+                        >
                            <div className="flex items-center gap-4">
                               <div className="p-2 bg-monetaris-100 dark:bg-monetaris-500/10 text-monetaris-600 dark:text-monetaris-400 rounded-lg shrink-0">
                                 <Mail size={18} />
@@ -143,9 +344,9 @@ export const Settings: React.FC = () => {
                                 <p className="text-xs text-slate-500 dark:text-slate-400">{setting.desc}</p>
                               </div>
                            </div>
-                           {/* Custom Toggle Switch Mock */}
-                           <div className={`w-12 h-6 rounded-full relative transition-colors shrink-0 ${i < 3 ? 'bg-monetaris-500' : 'bg-slate-200 dark:bg-[#202020]'}`}>
-                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${i < 3 ? 'left-7' : 'left-1'}`}></div>
+                           {/* Functional Toggle Switch */}
+                           <div className={`w-12 h-6 rounded-full relative transition-colors shrink-0 ${notifications[setting.key] ? 'bg-monetaris-500' : 'bg-slate-200 dark:bg-[#202020]'}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${notifications[setting.key] ? 'left-7' : 'left-1'}`}></div>
                            </div>
                         </div>
                       ))}
@@ -168,7 +369,31 @@ export const Settings: React.FC = () => {
                 <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
                   Das Löschen des Accounts ist unwiderruflich. Alle zugehörigen Daten werden gemäß DSGVO entfernt.
                 </p>
-                <Button variant="danger" size="sm">Account löschen</Button>
+                {!showDeleteConfirm ? (
+                  <Button variant="danger" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+                    Account löschen
+                  </Button>
+                ) : (
+                  <div className="space-y-4 p-4 bg-red-100 dark:bg-red-900/20 rounded-xl">
+                    <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                      Geben Sie "LÖSCHEN" ein, um zu bestätigen:
+                    </p>
+                    <Input
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="LÖSCHEN"
+                      className="max-w-xs"
+                    />
+                    <div className="flex gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}>
+                        Abbrechen
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={handleDeleteAccount}>
+                        Endgültig löschen
+                      </Button>
+                    </div>
+                  </div>
+                )}
              </div>
            )}
         </div>

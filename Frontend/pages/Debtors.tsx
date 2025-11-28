@@ -2,35 +2,63 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Badge, Button, Input, CreationWizard } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { debtorsApi } from '@/services/api/apiClient';
 import { authService } from '../services/authService';
 import { Debtor, RiskScore, UserRole } from '../types';
-import { MapPin, Phone, Mail, MoreHorizontal, Plus, Search, Filter, ArrowRight, User, Globe } from 'lucide-react';
+import { MapPin, Phone, Mail, MoreHorizontal, Plus, Search, Filter, ArrowRight, User, Globe, ChevronDown, X } from 'lucide-react';
+
+type SortOption = 'name-asc' | 'newest' | 'highest-debt';
 
 export const Debtors: React.FC = () => {
   const navigate = useNavigate();
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [filteredDebtors, setFilteredDebtors] = useState<Debtor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+
   // Scope Toggle
   const [viewScope, setViewScope] = useState<'MINE' | 'ALL'>('ALL');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Filter state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedRiskScores, setSelectedRiskScores] = useState<RiskScore[]>([]);
+  const [hasOpenCases, setHasOpenCases] = useState<boolean | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+
   const load = async () => {
-      const { user } = authService.checkSession();
-      setCurrentUser(user);
-      // Get all accessible debtors
-      const data = await dataService.getAccessibleDebtors(user || undefined);
-      setDebtors(data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+
+        const { user } = authService.checkSession();
+        setCurrentUser(user);
+
+        // Fetch debtors from API with pagination
+        const response = await debtorsApi.getAll({
+          page: currentPage,
+          pageSize: pageSize,
+        });
+
+        setDebtors(response.data);
+        setTotalCount(response.total);
+        setLoading(false);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load debtors');
+        setLoading(false);
+      }
   };
 
   useEffect(() => {
     load();
-  }, []);
+  }, [currentPage, pageSize]);
 
   useEffect(() => {
       let result = debtors;
@@ -43,14 +71,51 @@ export const Debtors: React.FC = () => {
       // Filter by Search
       if (searchTerm) {
           const lowerTerm = searchTerm.toLowerCase();
-          result = result.filter(d => 
+          result = result.filter(d =>
             (d.companyName || d.lastName || '').toLowerCase().includes(lowerTerm) ||
             d.id.toLowerCase().includes(lowerTerm)
           );
       }
 
+      // Filter by Risk Score
+      if (selectedRiskScores.length > 0) {
+          result = result.filter(d => selectedRiskScores.includes(d.riskScore));
+      }
+
+      // Filter by Open Cases
+      if (hasOpenCases !== null) {
+          result = result.filter(d => hasOpenCases ? d.openCases > 0 : d.openCases === 0);
+      }
+
+      // Sort
+      if (sortBy === 'name-asc') {
+          result = [...result].sort((a, b) => {
+              const nameA = a.companyName || `${a.lastName}, ${a.firstName}`;
+              const nameB = b.companyName || `${b.lastName}, ${b.firstName}`;
+              return nameA.localeCompare(nameB);
+          });
+      } else if (sortBy === 'newest') {
+          result = [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else if (sortBy === 'highest-debt') {
+          result = [...result].sort((a, b) => b.totalDebt - a.totalDebt);
+      }
+
       setFilteredDebtors(result);
-  }, [debtors, searchTerm, viewScope, currentUser]);
+  }, [debtors, searchTerm, viewScope, currentUser, selectedRiskScores, hasOpenCases, sortBy]);
+
+  const toggleRiskScore = (score: RiskScore) => {
+      setSelectedRiskScores(prev =>
+          prev.includes(score) ? prev.filter(s => s !== score) : [...prev, score]
+      );
+  };
+
+  const clearAllFilters = () => {
+      setSelectedRiskScores([]);
+      setHasOpenCases(null);
+      setSortBy('name-asc');
+  };
+
+  const activeFilterCount = selectedRiskScores.length + (hasOpenCases !== null ? 1 : 0) + (sortBy !== 'name-asc' ? 1 : 0);
 
   const getRiskBadge = (score: RiskScore) => {
     const colors = {
@@ -98,25 +163,147 @@ export const Debtors: React.FC = () => {
         }
       />
 
-      {/* Search Bar */}
+      {/* Search Bar & Filter */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
         <div className="relative flex-1 max-w-lg w-full">
            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-           <input 
-             type="text" 
-             placeholder="Suche nach Namen oder ID..." 
+           <input
+             type="text"
+             placeholder="Suche nach Namen oder ID..."
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-monetaris-500 focus:ring-2 focus:ring-monetaris-500/20 transition-all
              dark:bg-[#151515] dark:border-white/10 dark:text-white dark:placeholder:text-slate-600 dark:focus:bg-[#1A1A1A] dark:focus:border-monetaris-400/50 dark:focus:ring-0"
            />
         </div>
-        <Button variant="secondary" className="px-4 w-full md:w-auto"><Filter size={18} /></Button>
+        <div className="relative w-full md:w-auto">
+          <Button
+            variant="secondary"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="px-4 w-full md:w-auto relative"
+          >
+            <Filter size={18} />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-monetaris-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+
+          {/* Filter Dropdown */}
+          {isFilterOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#151515] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+                <h3 className="font-bold text-slate-900 dark:text-white">Filter & Sortierung</h3>
+                <button
+                  onClick={() => setIsFilterOpen(false)}
+                  className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Risk Score Filter */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 block">
+                  Risikoklasse
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[RiskScore.A, RiskScore.B, RiskScore.C, RiskScore.D, RiskScore.E].map(score => (
+                    <button
+                      key={score}
+                      onClick={() => toggleRiskScore(score)}
+                      className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                        selectedRiskScores.includes(score)
+                          ? 'bg-monetaris-500 text-white shadow-lg shadow-monetaris-500/20'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0A0A0A] dark:text-slate-400 dark:hover:bg-[#202020]'
+                      }`}
+                    >
+                      {score}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Open Cases Filter */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 block">
+                  Fallstatus
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHasOpenCases(hasOpenCases === true ? null : true)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      hasOpenCases === true
+                        ? 'bg-monetaris-500 text-white shadow-lg shadow-monetaris-500/20'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0A0A0A] dark:text-slate-400 dark:hover:bg-[#202020]'
+                    }`}
+                  >
+                    Mit Akten
+                  </button>
+                  <button
+                    onClick={() => setHasOpenCases(hasOpenCases === false ? null : false)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      hasOpenCases === false
+                        ? 'bg-monetaris-500 text-white shadow-lg shadow-monetaris-500/20'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0A0A0A] dark:text-slate-400 dark:hover:bg-[#202020]'
+                    }`}
+                  >
+                    Ohne Akten
+                  </button>
+                </div>
+              </div>
+
+              {/* Sort Options */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 block">
+                  Sortierung
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'name-asc' as SortOption, label: 'Name A-Z' },
+                    { value: 'newest' as SortOption, label: 'Neueste zuerst' },
+                    { value: 'highest-debt' as SortOption, label: 'Höchste Forderung' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSortBy(option.value)}
+                      className={`w-full px-4 py-2 rounded-lg text-sm font-medium text-left transition-all ${
+                        sortBy === option.value
+                          ? 'bg-monetaris-500 text-white shadow-lg shadow-monetaris-500/20'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0A0A0A] dark:text-slate-400 dark:hover:bg-[#202020]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear All */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors"
+                >
+                  Alle Filter zurücksetzen
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {loading ? (
           <div className="text-center py-20 text-slate-500 font-mono animate-pulse">Zugriff auf sichere Datenbank...</div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-red-500 font-medium mb-2">Fehler beim Laden der Daten</p>
+            <p className="text-slate-500 text-sm">{error}</p>
+            <Button variant="secondary" onClick={load} className="mt-4">Erneut versuchen</Button>
+          </div>
         ) : filteredDebtors.length === 0 ? (
             <div className="text-center py-20 text-slate-500">Keine Schuldner gefunden.</div>
         ) : filteredDebtors.map((debtor) => (

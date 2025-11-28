@@ -1,3 +1,5 @@
+using Monetaris.Shared.Enums;
+
 namespace Monetaris.Debtor.Models;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Monetaris.Debtor.Models;
 public class DebtorSearchDto
 {
     public Guid Id { get; set; }
-    public bool IsCompany { get; set; }
+    public EntityType EntityType { get; set; }
     public string? CompanyName { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
@@ -15,5 +17,13 @@ public class DebtorSearchDto
     public decimal TotalDebt { get; set; }
     public int OpenCases { get; set; }
 
-    public string DisplayName => IsCompany ? CompanyName ?? "Unknown" : $"{FirstName} {LastName}";
+    // Backwards Compatibility
+    public bool IsCompany => EntityType != EntityType.NATURAL_PERSON;
+
+    public string DisplayName => EntityType switch
+    {
+        EntityType.LEGAL_ENTITY => CompanyName ?? "Unbekannt",
+        EntityType.PARTNERSHIP => CompanyName ?? "Unbekannte Gesellschaft",
+        _ => $"{FirstName} {LastName}".Trim()
+    };
 }

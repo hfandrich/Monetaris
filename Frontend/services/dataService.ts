@@ -1,6 +1,6 @@
 
 
-import { CollectionCase, Debtor, Tenant, CaseStatus, DashboardStats, Inquiry, Document, User, SearchResult, ImportProviderType, ImportMapping, CommunicationTemplate, RiskScore, UserRole } from '../types';
+import { CollectionCase, Debtor, Kreditor, CaseStatus, DashboardStats, Inquiry, Document, User, SearchResult, ImportProviderType, ImportMapping, CommunicationTemplate, RiskScore, UserRole } from '../types';
 import { API_ENDPOINTS } from './api/config';
 import { HttpClient } from './api/httpClient';
 
@@ -13,8 +13,8 @@ class DataService {
 
   // --- Read Actions (Scoped) ---
 
-  async getAccessibleTenants(user: User): Promise<Tenant[]> {
-    return HttpClient.get<Tenant[]>(API_ENDPOINTS.TENANTS);
+  async getAccessibleTenants(user: User): Promise<Kreditor[]> {
+    return HttpClient.get<Kreditor[]>(API_ENDPOINTS.TENANTS);
   }
 
   async getAccessibleCases(user: User): Promise<CollectionCase[]> {
@@ -43,8 +43,8 @@ class DataService {
     return HttpClient.get<Debtor[]>(API_ENDPOINTS.DEBTORS);
   }
 
-  async getTenants(): Promise<Tenant[]> {
-    return HttpClient.get<Tenant[]>(API_ENDPOINTS.TENANTS);
+  async getTenants(): Promise<Kreditor[]> {
+    return HttpClient.get<Kreditor[]>(API_ENDPOINTS.TENANTS);
   }
 
   async getDebtorById(id: string): Promise<{ debtor: Debtor, cases: CollectionCase[] } | null> {
@@ -58,14 +58,27 @@ class DataService {
     }
   }
 
-  async getTenantById(id: string): Promise<{ tenant: Tenant, cases: CollectionCase[], users: User[] } | null> {
+  async getTenantById(id: string): Promise<{ tenant: Kreditor, cases: CollectionCase[], users: User[] } | null> {
     try {
-      const tenant = await HttpClient.get<Tenant>(`${API_ENDPOINTS.TENANTS}/${id}`);
-      const cases = await HttpClient.get<CollectionCase[]>(`${API_ENDPOINTS.TENANTS}/${id}/cases`);
-      const users = await HttpClient.get<User[]>(`${API_ENDPOINTS.TENANTS}/${id}/users`);
+      const tenant = await HttpClient.get<Kreditor>(`${API_ENDPOINTS.KREDITOREN}/${id}`);
+
+      // Cases for this kreditor - use the cases endpoint with filter
+      let cases: CollectionCase[] = [];
+      try {
+        const casesResponse = await HttpClient.get<{ data: CollectionCase[] }>(`${API_ENDPOINTS.CASES}?kreditorId=${id}`);
+        cases = casesResponse?.data || [];
+      } catch {
+        // Cases endpoint might fail - fallback to empty
+        cases = [];
+      }
+
+      // Users endpoint doesn't exist yet - return empty array
+      // TODO: Implement /api/kreditoren/{id}/users endpoint in backend
+      const users: User[] = [];
 
       return { tenant, cases, users };
     } catch (error) {
+      console.error('Error loading tenant:', error);
       return null;
     }
   }
@@ -88,8 +101,8 @@ class DataService {
     return HttpClient.post<Debtor>(API_ENDPOINTS.DEBTORS, debtor);
   }
 
-  async addTenant(tenant: Tenant): Promise<Tenant> {
-    return HttpClient.post<Tenant>(API_ENDPOINTS.TENANTS, tenant);
+  async addTenant(tenant: Kreditor): Promise<Kreditor> {
+    return HttpClient.post<Kreditor>(API_ENDPOINTS.TENANTS, tenant);
   }
 
   async addCase(newCase: CollectionCase): Promise<CollectionCase> {
@@ -154,9 +167,35 @@ class DataService {
     }, 500));
   }
 
-  async importBatchData(items: any[]): Promise<void> {
+  async importBatchData(kreditorId: string, items: any[]): Promise<{ created: number, skipped: number, errors: string[] }> {
+    // Transform UI items to batch import format
+    const batchItems = items.map(item => {
+      // Parse German currency format (e.g., "2.450,00 €" -> 2450.00)
+      const amountStr = item.amount.replace(/[€\s]/g, '').replace(/\./g, '').replace(',', '.');
+      const amount = parseFloat(amountStr) || 0;
+
+      // Parse German date format (DD.MM.YYYY -> Date)
+      const [day, month, year] = item.due.split('.');
+      const dueDate = new Date(`${year}-${month}-${day}`);
+
+      return {
+        invoiceNumber: item.invoice,
+        debtorName: item.debtor,
+        amount,
+        dueDate: dueDate.toISOString()
+      };
+    });
+
     // Send batch data to backend for processing
-    await HttpClient.post(`${API_ENDPOINTS.CASES}/batch`, { items });
+    const response = await HttpClient.post<{ created: number, skipped: number, errors: string[] }>(
+      `${API_ENDPOINTS.CASES}/batch`,
+      {
+        kreditorId,
+        items: batchItems
+      }
+    );
+
+    return response;
   }
 
   async processImport(tenantId: string, mappings: ImportMapping[], provider: ImportProviderType): Promise<void> {

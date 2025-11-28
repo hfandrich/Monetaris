@@ -1,18 +1,22 @@
 import { test, expect } from '@playwright/test';
 
+// Helper to navigate with HashRouter
+const hashUrl = (path: string) => `/#${path}`;
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     // Login as admin before each test
-    await page.goto('/login');
+    await page.goto(hashUrl('/login'));
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     await page.fill('input[type="email"]', 'admin@monetaris.com');
-    await page.fill('input[type="password"]', 'password');
+    await page.fill('input[type="password"]', 'admin123');
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
+    await expect(page).toHaveURL(/.*#\/dashboard/, { timeout: 10000 });
   });
 
   test('Dashboard loads successfully', async ({ page }) => {
     // Verify we are on dashboard
-    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page).toHaveURL(/.*#\/dashboard/);
 
     // Verify main content is visible
     await expect(page.locator('main, .dashboard-content')).toBeVisible();
@@ -51,8 +55,8 @@ test.describe('Dashboard', () => {
     ).toBeVisible();
 
     // Verify key navigation items exist
-    await expect(page.locator('a[href*="/dashboard"]')).toBeVisible();
-    await expect(page.locator('a[href*="/claims"]')).toBeVisible();
+    await expect(page.locator('a[href*="#/dashboard"]')).toBeVisible();
+    await expect(page.locator('a[href*="#/claims"]')).toBeVisible();
   });
 
   test('Dashboard header shows user information', async ({ page }) => {
@@ -127,13 +131,14 @@ test.describe('Dashboard', () => {
 
   test('Agent user sees appropriate dashboard content', async ({ page }) => {
     // Logout and login as agent
-    await page.goto('/login');
+    await page.goto(hashUrl('/login'));
     await page.evaluate(() => localStorage.clear());
+    await page.waitForSelector('input[type="email"]', { timeout: 10000 });
     await page.fill('input[type="email"]', 'max@monetaris.com');
-    await page.fill('input[type="password"]', 'password');
+    await page.fill('input[type="password"]', 'max123');
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
+    await expect(page).toHaveURL(/.*#\/dashboard/, { timeout: 10000 });
 
     // Verify agent sees dashboard
     await expect(page.locator('text=Max Mustermann')).toBeVisible();
@@ -146,12 +151,12 @@ test.describe('Dashboard', () => {
 
   test('Navigation links are functional', async ({ page }) => {
     // Click on Claims link
-    await page.click('a[href*="/claims"]');
-    await expect(page).toHaveURL(/.*claims/);
+    await page.click('a[href*="#/claims"]');
+    await expect(page).toHaveURL(/.*#\/claims/);
 
     // Go back to dashboard
-    await page.click('a[href*="/dashboard"]');
-    await expect(page).toHaveURL(/.*dashboard/);
+    await page.click('a[href*="#/dashboard"]');
+    await expect(page).toHaveURL(/.*#\/dashboard/);
   });
 
   test('Theme can be toggled', async ({ page }) => {

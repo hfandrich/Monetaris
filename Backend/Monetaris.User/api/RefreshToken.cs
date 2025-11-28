@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Monetaris.User.Services;
 using Monetaris.User.Models;
@@ -30,8 +31,10 @@ public class RefreshToken : ControllerBase
     /// <response code="200">Token refresh successful - returns new access token and refresh token</response>
     /// <response code="400">Invalid refresh token, expired token, revoked token, or inactive user</response>
     [HttpPost("refresh")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> RefreshTokenAsync([FromBody] RefreshTokenRequest request)
     {
         _logger.LogInformation("Token refresh attempt");

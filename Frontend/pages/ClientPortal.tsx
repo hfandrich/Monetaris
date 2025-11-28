@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Card, Button, Badge, CreationWizard } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { casesApi } from '../services/api/apiClient';
+import type { ApiError } from '../services/api/apiClient';
 import { authService } from '../services/authService';
 import { CollectionCase, CaseStatus } from '../types';
 import { UploadCloud, FileText, TrendingUp, Wallet, Plus, CheckCircle2, FileSpreadsheet, Database, ArrowRight, PieChart, Activity, Clock, AlertTriangle, Download, ChevronRight, Shield } from 'lucide-react';
@@ -16,17 +17,24 @@ export const ClientPortal: React.FC = () => {
   const { user } = authService.checkSession();
 
   const loadData = async () => {
-    if (!user?.tenantId) return;
-    
-    const allCases = await dataService.getCases();
-    // Strict filtering for the logged-in client
-    const clientCases = allCases.filter(c => c.tenantId === user.tenantId);
-    
-    // Sort by date desc
-    clientCases.sort((a, b) => new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime());
-    
-    setCases(clientCases);
-    setLoading(false);
+    if (!user?.kreditorId) return;
+
+    try {
+      // Fetch cases filtered by tenant ID
+      const result = await casesApi.getAll({ kreditorId: user.kreditorId });
+      const clientCases = result?.data || [];
+
+      // Sort by date desc
+      clientCases.sort((a, b) => new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime());
+
+      setCases(clientCases);
+    } catch (err) {
+      const apiError = err as ApiError;
+      console.error('Error loading client cases:', apiError.message);
+      setCases([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

@@ -2,40 +2,49 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Button, Badge, CreationWizard } from '../components/UI';
-import { dataService } from '../services/dataService';
+import { kreditorenApi } from '../services/api/apiClient';
+import type { ApiError } from '../services/api/apiClient';
 import { authService } from '../services/authService';
-import { Tenant, CollectionCase, UserRole } from '../types';
-import { Building2, Mail, CreditCard, Plus, MoreVertical, ArrowRight, Wallet, TrendingUp, Users, Search, Filter, User, Globe } from 'lucide-react';
+import { Kreditor, UserRole } from '../types';
+import { Building2, Mail, CreditCard, Plus, MoreVertical, ArrowRight, Wallet, TrendingUp, Users, Search, Filter, User, Globe, X } from 'lucide-react';
 
-interface ClientStats {
-  totalCases: number;
-  activeVolume: number;
-  debtorCount: number;
-}
+type SortOption = 'name-asc' | 'volume-desc' | 'cases-desc';
 
 export const Clients: React.FC = () => {
   const navigate = useNavigate();
-  const [clients, setClients] = useState<Tenant[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Tenant[]>([]);
-  const [cases, setCases] = useState<CollectionCase[]>([]);
+  const [clients, setClients] = useState<Kreditor[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Kreditor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  
+
   // Scope Toggle (for consistency mostly, as Agent only sees assigned)
-  const [viewScope, setViewScope] = useState<'MINE' | 'ALL'>('ALL'); 
+  const [viewScope, setViewScope] = useState<'MINE' | 'ALL'>('ALL');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Filter state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+
   const loadData = async () => {
-      const { user } = authService.checkSession();
-      setCurrentUser(user);
-      const [clientData, caseData] = await Promise.all([
-        dataService.getAccessibleTenants(user || undefined), // Already filtered by agent assignment
-        dataService.getCases()
-      ]);
-      setClients(clientData);
-      setCases(caseData);
-      setLoading(false);
+      try {
+        setLoading(true);
+        setError(null);
+        const { user } = authService.checkSession();
+        setCurrentUser(user);
+        // Backend Kreditoren API returns tenants with stats (totalDebtors, totalCases, totalVolume)
+        const clientData = await kreditorenApi.getAll();
+        setClients(clientData?.data || []);
+      } catch (err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Failed to load data');
+        console.error('Error loading clients:', err);
+        // Fallback to empty array on error
+        setClients([]);
+      } finally {
+        setLoading(false);
+      }
   };
 
   useEffect(() => {
@@ -44,31 +53,44 @@ export const Clients: React.FC = () => {
 
   useEffect(() => {
       let result = clients;
-      
+
       // If Agent/Admin selects MINE, technically for clients page this might mean "Clients assigned to me"
       // For simplicity in this mockup, AGENT access is already filtered by `getAccessibleTenants`.
       // So `ALL` vs `MINE` might not change much unless we have strict ownership per client (which is usually handled by access list).
       // However, we keep the UI for consistency.
-      
+
       if (searchTerm) {
           const lowerTerm = searchTerm.toLowerCase();
-          result = result.filter(t => 
-            t.name.toLowerCase().includes(lowerTerm) || 
+          result = result.filter(t =>
+            t.name.toLowerCase().includes(lowerTerm) ||
             t.registrationNumber.toLowerCase().includes(lowerTerm)
           );
       }
+
+      // Sort
+      if (sortBy === 'name-asc') {
+          result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+      } else if (sortBy === 'volume-desc') {
+          result = [...result].sort((a, b) => (b.totalVolume ?? 0) - (a.totalVolume ?? 0));
+      } else if (sortBy === 'cases-desc') {
+          result = [...result].sort((a, b) => (b.totalCases ?? 0) - (a.totalCases ?? 0));
+      }
+
       setFilteredClients(result);
-  }, [clients, searchTerm, viewScope]);
+  }, [clients, searchTerm, viewScope, sortBy]);
 
-  const getClientStats = (tenantId: string): ClientStats => {
-    const clientCases = cases.filter(c => c.tenantId === tenantId);
-    const activeVolume = clientCases.reduce((sum, c) => sum + c.totalAmount, 0);
-    const uniqueDebtors = new Set(clientCases.map(c => c.debtorId)).size;
+  const clearAllFilters = () => {
+      setSortBy('name-asc');
+  };
 
+  const activeFilterCount = sortBy !== 'name-asc' ? 1 : 0;
+
+  // Stats are now provided directly by the backend Kreditoren API
+  const getClientStats = (tenant: Kreditor) => {
     return {
-      totalCases: clientCases.length,
-      activeVolume,
-      debtorCount: uniqueDebtors
+      totalCases: tenant.totalCases ?? 0,
+      activeVolume: tenant.totalVolume ?? 0,
+      debtorCount: tenant.totalDebtors ?? 0
     };
   };
 
@@ -103,23 +125,93 @@ export const Clients: React.FC = () => {
         }
       />
 
-      {/* Search Bar */}
+      {/* Search Bar & Filter */}
       <div className="flex items-center gap-4 mb-8">
         <div className="relative flex-1 max-w-lg">
            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-           <input 
-             type="text" 
-             placeholder="Suche nach Firma, HRB-Nummer..." 
+           <input
+             type="text"
+             placeholder="Suche nach Firma, HRB-Nummer..."
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-monetaris-500 focus:ring-2 focus:ring-monetaris-500/20 transition-all
              dark:bg-[#151515] dark:border-white/10 dark:text-white dark:placeholder:text-slate-600 dark:focus:bg-[#1A1A1A] dark:focus:border-monetaris-400/50 dark:focus:ring-0"
            />
         </div>
-        <Button variant="secondary" className="px-4"><Filter size={18} /></Button>
+        <div className="relative">
+          <Button
+            variant="secondary"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="px-4 relative"
+          >
+            <Filter size={18} />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-monetaris-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+
+          {/* Filter Dropdown */}
+          {isFilterOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#151515] border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/5">
+                <h3 className="font-bold text-slate-900 dark:text-white">Sortierung</h3>
+                <button
+                  onClick={() => setIsFilterOpen(false)}
+                  className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Sort Options */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 block">
+                  Sortieren nach
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'name-asc' as SortOption, label: 'Name A-Z' },
+                    { value: 'volume-desc' as SortOption, label: 'Höchstes Volumen' },
+                    { value: 'cases-desc' as SortOption, label: 'Meiste Akten' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSortBy(option.value)}
+                      className={`w-full px-4 py-2 rounded-lg text-sm font-medium text-left transition-all ${
+                        sortBy === option.value
+                          ? 'bg-monetaris-500 text-white shadow-lg shadow-monetaris-500/20'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#0A0A0A] dark:text-slate-400 dark:hover:bg-[#202020]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clear All */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors"
+                >
+                  Sortierung zurücksetzen
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="glass-panel p-12 text-center rounded-[32px] border-2 border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5">
+           <p className="text-red-600 dark:text-red-400 font-bold mb-2">Fehler beim Laden</p>
+           <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>
+        </div>
+      ) : loading ? (
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1,2].map(i => (
                 <div key={i} className="h-64 bg-slate-100 dark:bg-[#151515] rounded-[32px] animate-pulse"></div>
@@ -133,7 +225,7 @@ export const Clients: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredClients.map((tenant) => {
-            const stats = getClientStats(tenant.id);
+            const stats = getClientStats(tenant);
             
             return (
               <div 
@@ -187,8 +279,6 @@ export const Clients: React.FC = () => {
                  </div>
 
                  <div className="flex items-center gap-3 pt-6 border-t border-slate-100 dark:border-white/5">
-                    <Badge color="green">Aktiv</Badge>
-                    <Badge color="blue">Premium Plan</Badge>
                     <Button onClick={() => navigate(`/clients/${tenant.id}`)} variant="ghost" size="sm" className="ml-auto text-monetaris-600 dark:text-monetaris-400 hover:bg-monetaris-50 dark:hover:bg-monetaris-500/10">
                        Akte öffnen <ArrowRight size={16} className="ml-2" />
                     </Button>

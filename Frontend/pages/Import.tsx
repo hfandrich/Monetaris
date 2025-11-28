@@ -1,8 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import Papa from 'papaparse';
 import { PageHeader, Card, Button, Badge, Input } from '../components/UI';
 import { UploadCloud, FileSpreadsheet, CheckCircle, AlertCircle, FileText, ArrowRight, X, Paperclip, File as FileIcon, Check, AlertTriangle, Maximize2, Minimize2, Monitor, ScanEye, ChevronLeft, ChevronRight as ChevronRightIcon, Save } from 'lucide-react';
 import { dataService } from '../services/dataService';
+import { authService } from '../services/authService';
 
 interface ImportItem {
   id: string;
@@ -11,6 +13,10 @@ interface ImportItem {
   amount: string;
   due: string;
   attachedFile?: File;
+}
+
+interface CsvRow {
+  [key: string]: string;
 }
 
 export const Import: React.FC = () => {
@@ -41,13 +47,14 @@ export const Import: React.FC = () => {
     else if (e.type === "dragleave") setPdfDragActive(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setCsvFile(e.dataTransfer.files[0]);
-      loadMockData();
+      const file = e.dataTransfer.files[0];
+      setCsvFile(file);
+      await parseCsvFile(file);
       setStep('PREVIEW');
     }
   };
@@ -59,10 +66,11 @@ export const Import: React.FC = () => {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) processPdfFiles(Array.from(e.dataTransfer.files));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setCsvFile(e.target.files[0]);
-      loadMockData();
+      const file = e.target.files[0];
+      setCsvFile(file);
+      await parseCsvFile(file);
       setStep('PREVIEW');
     }
   };
@@ -71,14 +79,100 @@ export const Import: React.FC = () => {
     if (e.target.files && e.target.files.length > 0) processPdfFiles(Array.from(e.target.files));
   };
 
-  const loadMockData = () => {
-    setPreviewItems([
-      { id: '1', invoice: 'RE-2024-901', debtor: 'Müller Bau GmbH', amount: '2.450,00 €', due: '15.10.2024' },
-      { id: '2', invoice: 'RE-2024-902', debtor: 'Sebastian Klein', amount: '129,50 €', due: '12.10.2024' },
-      { id: '3', invoice: 'RE-2024-903', debtor: 'Agentur Werbeheld', amount: '4.100,00 €', due: '01.10.2024' },
-      { id: '4', invoice: 'RE-2024-904', debtor: 'Kiosk am Eck', amount: '89,20 €', due: '05.10.2024' },
-      { id: '5', invoice: 'RE-2024-905', debtor: 'StartUp Inc', amount: '12.500,00 €', due: '30.09.2024' },
-    ]);
+  /**
+   * Parse CSV file and extract invoice data
+   * Supports common CSV formats with semicolon or comma separators
+   */
+  const parseCsvFile = (file: File): Promise<void> => {
+    return new Promise((resolve) => {
+      Papa.parse<CsvRow>(file, {
+        header: true,
+        skipEmptyLines: true,
+        delimiter: '', // Auto-detect (handles both ; and ,)
+        transformHeader: (header) => header.trim().toLowerCase(),
+        complete: (results) => {
+          const items: ImportItem[] = results.data
+            .map((row, index) => {
+              // Try to find invoice number field (various possible names)
+              const invoice = row['rechnungsnummer'] ||
+                            row['invoice'] ||
+                            row['invoicenumber'] ||
+                            row['rechnungs-nr'] ||
+                            row['rechnungsnr'] ||
+                            '';
+
+              // Try to find debtor name (various possible names)
+              const debtor = row['schuldner'] ||
+                           row['kunde'] ||
+                           row['debtor'] ||
+                           row['name'] ||
+                           row['kundenname'] ||
+                           row['kunde name'] ||
+                           '';
+
+              // Try to find amount (various possible names)
+              let amountStr = row['betrag'] ||
+                            row['amount'] ||
+                            row['summe'] ||
+                            row['total'] ||
+                            row['betrag brutto'] ||
+                            '0';
+
+              // Clean amount: remove currency symbols, convert comma to dot
+              amountStr = amountStr.replace(/[€$]/g, '').replace(',', '.').trim();
+              const amountNum = parseFloat(amountStr) || 0;
+
+              // Format as German currency
+              const amount = new Intl.NumberFormat('de-DE', {
+                style: 'currency',
+                currency: 'EUR'
+              }).format(amountNum);
+
+              // Try to find due date (various possible names)
+              const dueStr = row['fälligkeit'] ||
+                           row['fälligkeitsdatum'] ||
+                           row['due'] ||
+                           row['duedate'] ||
+                           row['due date'] ||
+                           '';
+
+              // Parse date (supports YYYY-MM-DD, DD.MM.YYYY, DD/MM/YYYY)
+              let due = '';
+              if (dueStr) {
+                const dateMatch = dueStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+                const germanDateMatch = dueStr.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+                const slashDateMatch = dueStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+
+                if (dateMatch) {
+                  due = `${dateMatch[3]}.${dateMatch[2]}.${dateMatch[1]}`;
+                } else if (germanDateMatch) {
+                  due = dueStr;
+                } else if (slashDateMatch) {
+                  due = `${slashDateMatch[1]}.${slashDateMatch[2]}.${slashDateMatch[3]}`;
+                }
+              }
+
+              return {
+                id: `${index + 1}`,
+                invoice: invoice.trim(),
+                debtor: debtor.trim(),
+                amount,
+                due: due || new Date().toLocaleDateString('de-DE')
+              };
+            })
+            .filter(item => item.invoice && item.debtor); // Only keep rows with invoice and debtor
+
+          setPreviewItems(items);
+          resolve();
+        },
+        error: (error) => {
+          console.error('CSV parsing error:', error);
+          // Fallback to empty array on error
+          setPreviewItems([]);
+          resolve();
+        }
+      });
+    });
   };
 
   const processPdfFiles = (files: File[]) => {
@@ -92,17 +186,40 @@ export const Import: React.FC = () => {
 
   const handleItemUpdate = (index: number, field: keyof ImportItem, value: string) => {
       const updated = [...previewItems];
-      // @ts-ignore
+      // @ts-expect-error - attachedFile is File type but we're only updating string fields
       updated[index][field] = value;
       setPreviewItems(updated);
   };
 
   const processUpload = async () => {
     setUploading(true);
-    // Call Service to actually store data (Mock)
-    await dataService.importBatchData(previewItems);
-    setUploading(false);
-    setStep('SUCCESS');
+
+    try {
+      // Get current user to determine kreditorId
+      const authState = authService.checkSession();
+
+      if (!authState.user || !authState.user.tenantId) {
+        alert('Fehler: Kein Mandant zugeordnet. Bitte kontaktieren Sie den Administrator.');
+        setUploading(false);
+        return;
+      }
+
+      // Call service to import batch data
+      const result = await dataService.importBatchData(authState.user.tenantId, previewItems);
+
+      // Show errors if any
+      if (result.errors && result.errors.length > 0) {
+        console.warn('Import warnings:', result.errors);
+        // Show summary in console, but proceed to success
+      }
+
+      setUploading(false);
+      setStep('SUCCESS');
+    } catch (error: any) {
+      console.error('Import failed:', error);
+      alert(`Import fehlgeschlagen: ${error.message || 'Unbekannter Fehler'}`);
+      setUploading(false);
+    }
   };
 
   const reset = () => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   X,
   ArrowRight,
@@ -17,20 +18,27 @@ import {
   Sparkles,
   StopCircle,
   UserPlus,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button, Input, Badge } from './UI';
 import {
   Debtor,
-  Tenant,
+  Kreditor,
   CollectionCase,
   AddressStatus,
   RiskScore,
   CaseStatus,
   UserRole,
+  EntityType,
+  Gender,
+  DoorPosition,
 } from '../types';
-import { tenantsApi, debtorsApi, casesApi } from '../services/api/apiClient';
+import { kreditorenApi, debtorsApi, casesApi } from '../services/api/apiClient';
 import { authService } from '../services/authService';
-import { GoogleGenAI } from '@google/genai';
+// TODO: Migrate voice transcription to backend API
+// import { GoogleGenAI } from '@google/genai';
+import { logger } from '../utils/logger';
 
 export type WizardType = 'DEBTOR' | 'CLIENT' | 'CLAIM';
 
@@ -187,15 +195,104 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   );
 };
 
+// --- Internal Component: Simple Select Dropdown ---
+interface SelectDropdownProps {
+  label: string;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (val: string) => void;
+  error?: string;
+}
+
+const SelectDropdown: React.FC<SelectDropdownProps> = ({
+  label,
+  placeholder,
+  options,
+  value,
+  onChange,
+  error,
+}) => {
+  return (
+    <div className="w-full group">
+      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1 group-focus-within:text-monetaris-600 dark:group-focus-within:text-monetaris-accent transition-colors">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm
+          focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none
+          ${error ? 'border-red-500/50' : 'border-slate-200 dark:border-white/10'}
+        `}
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <p className="mt-1.5 text-xs text-red-500 font-medium ml-1 flex items-center">
+          <span className="w-1 h-1 rounded-full bg-red-500 mr-1.5"></span>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+// --- Internal Component: Collapsible Section ---
+interface CollapsibleSectionProps {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
+
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+  title,
+  defaultOpen = false,
+  children,
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+      >
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          {title}
+        </span>
+        {isOpen ? (
+          <ChevronUp size={16} className="text-slate-500" />
+        ) : (
+          <ChevronDown size={16} className="text-slate-500" />
+        )}
+      </button>
+      {isOpen && <div className="p-4 space-y-4 bg-white dark:bg-[#0A0A0A]">{children}</div>}
+    </div>
+  );
+};
+
 export const CreationWizard: React.FC<CreationWizardProps> = ({
   isOpen,
   onClose,
   type,
   onSuccess,
 }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [createdId, setCreatedId] = useState<string>('');
 
   // Form States
   const [formData, setFormData] = useState<any>({});
@@ -205,11 +302,18 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
   const [isCreatingDebtor, setIsCreatingDebtor] = useState(false);
 
   // Data Lists for Claim Creation
-  const [availableTenants, setAvailableTenants] = useState<Tenant[]>([]);
+  const [availableKreditoren, setAvailableKreditoren] = useState<Kreditor[]>([]);
   const [availableDebtors, setAvailableDebtors] = useState<Debtor[]>([]);
 
   // User Info
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Duplicate Check State
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<{
+    hasDuplicates: boolean;
+    message: string;
+    duplicates?: any[];
+  } | null>(null);
 
   // Voice Input State
   const [isRecording, setIsRecording] = useState(false);
@@ -221,17 +325,24 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
   const getSteps = () => {
     switch (type) {
       case 'DEBTOR':
-        return ['Identität', 'Kontakt & Adresse'];
+        return ['Identität', 'Adresse', 'Kontakt', 'Bank & Sonstiges'];
       case 'CLIENT':
-        return ['Firmenprofil', 'Bankverbindung'];
+        return ['Firmenprofil', 'Adresse', 'Kontakt', 'Bankverbindung'];
       case 'CLAIM':
-        return ['Zuordnung', 'Rechnungsdaten', 'Prüfung'];
+        return ['Zuordnung', 'Forderungsdetails', 'Prüfung'];
       default:
         return ['Step 1'];
     }
   };
   const steps = getSteps();
   const totalSteps = steps.length;
+
+  // Run duplicate check when reaching step 3 for CLAIM
+  useEffect(() => {
+    if (isOpen && type === 'CLAIM' && step === 3) {
+      checkForDuplicates();
+    }
+  }, [step, isOpen, type]);
 
   // Fetch data when wizard opens
   useEffect(() => {
@@ -244,25 +355,26 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
       setFormData({});
       setErrors({});
       setIsCreatingDebtor(false);
+      setDuplicateCheckResult(null);
 
       // If User is Client, pre-set tenantId
-      if (user?.role === UserRole.CLIENT && user.tenantId) {
-        setFormData((prev: any) => ({ ...prev, tenantId: user.tenantId }));
+      if (user?.role === UserRole.CLIENT && user.kreditorId) {
+        setFormData((prev: any) => ({ ...prev, kreditorId: user.kreditorId }));
       }
 
       if (type === 'CLAIM') {
         const fetchData = async () => {
           try {
-            const [tenantsResult, debtorsResult] = await Promise.all([
-              tenantsApi.getAll(),
+            const [kreditorenResult, debtorsResult] = await Promise.all([
+              kreditorenApi.getAll(),
               debtorsApi.getAll(),
             ]);
             // Extract data arrays from paginated responses
-            setAvailableTenants(tenantsResult?.data || []);
+            setAvailableKreditoren(kreditorenResult?.data || []);
             setAvailableDebtors(debtorsResult?.data || []);
           } catch (err) {
-            console.error('Error loading wizard data:', err);
-            setAvailableTenants([]);
+            logger.error('Error loading wizard data:', err);
+            setAvailableKreditoren([]);
             setAvailableDebtors([]);
           }
         };
@@ -288,7 +400,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error('Error accessing microphone:', err);
+      logger.error('Error accessing microphone:', err);
       alert('Mikrofonzugriff verweigert oder nicht verfügbar.');
     }
   };
@@ -321,77 +433,26 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
   const processAudio = async (audioBlob: Blob) => {
     setIsProcessingVoice(true);
     try {
-      const base64Audio = await blobToBase64(audioBlob);
+      // TODO: Migrate voice transcription to backend API endpoint
+      // For now, show a message that this feature is temporarily unavailable
+      alert('Spracherkennung wird derzeit migriert. Bitte verwenden Sie die manuelle Eingabe.');
 
-      if (!process.env.API_KEY) throw new Error('API Key missing');
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-      let prompt = '';
-      // Adjust prompt based on context (including inline debtor creation)
-      if (type === 'DEBTOR' || isCreatingDebtor) {
-        prompt = `
-              Listen to the audio. It contains details about a debtor. 
-              Extract the following fields into a JSON object: 
-              firstName, lastName, companyName, email, phone, street, zipCode, city, notes.
-              If a field is missing, exclude it or set to null. 
-              Treat 'Musterfirma GmbH' as companyName.
-              Address might be spoken like "Musterstrasse 1 in 10115 Berlin".
-              `;
-      } else if (type === 'CLIENT') {
-        prompt = `
-              Listen to the audio. It contains details about a client (tenant). 
-              Extract: name (company name), regNumber (Handelsregister), email, iban.
-              Return JSON.
-              `;
-      } else if (type === 'CLAIM') {
-        prompt = `
-              Listen to the audio. It contains details about a collection claim.
-              Extract: invoiceNumber, amount (number), dueDate (YYYY-MM-DD), invoiceDate (YYYY-MM-DD).
-              Return JSON.
-              `;
-      }
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { mimeType: 'audio/webm', data: base64Audio } },
-              { text: prompt },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-
-      const jsonText = response.text;
-      if (jsonText) {
-        const data = JSON.parse(jsonText);
-
-        // Merge into form data
-        setFormData((prev: any) => {
-          const updates: any = { ...prev, ...data };
-
-          // Handle nested address manually if flat structure returned for debtor
-          if (
-            (type === 'DEBTOR' || isCreatingDebtor) &&
-            (data.street || data.zipCode || data.city)
-          ) {
-            updates.address = {
-              ...prev.address,
-              street: data.street || prev.address?.street,
-              zipCode: data.zipCode || prev.address?.zipCode,
-              city: data.city || prev.address?.city,
-            };
-          }
-          return updates;
-        });
-      }
+      // Future implementation should call backend API like:
+      // const token = authService.getToken();
+      // const formData = new FormData();
+      // formData.append('audio', audioBlob);
+      // formData.append('type', type);
+      //
+      // const response = await fetch(API_ENDPOINTS.AI.TRANSCRIBE, {
+      //   method: 'POST',
+      //   headers: { 'Authorization': `Bearer ${token}` },
+      //   body: formData
+      // });
+      //
+      // const data = await response.json();
+      // setFormData((prev: any) => ({ ...prev, ...data }));
     } catch (e) {
-      console.error('Voice processing failed', e);
+      logger.error('Voice processing failed', e);
       alert('Spracherkennung fehlgeschlagen. Bitte versuchen Sie es erneut.');
     } finally {
       setIsProcessingVoice(false);
@@ -440,8 +501,8 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
         isValid = false;
       }
       // Basic check for address parts
-      if (!formData.address?.city) {
-        newErrors['address.city'] = 'Stadt fehlt';
+      if (!formData.city) {
+        newErrors['city'] = 'Stadt fehlt';
         isValid = false;
       }
 
@@ -449,10 +510,33 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
     } else if (type === 'DEBTOR' || (type === 'CLAIM' && currentStep === 1 && isCreatingDebtor)) {
       // Standard Debtor Validation
       if (currentStep === 1) {
-        if (!formData.firstName && !formData.lastName && !formData.companyName) {
-          newErrors['lastName'] = 'Bitte Namen oder Firma angeben';
+        if (!formData.entityType) {
+          newErrors['entityType'] = 'Bitte Typ auswählen';
           isValid = false;
         }
+        if (
+          formData.entityType === EntityType.NATURAL_PERSON &&
+          !formData.firstName &&
+          !formData.lastName
+        ) {
+          newErrors['lastName'] = 'Name erforderlich für natürliche Person';
+          isValid = false;
+        }
+        if (
+          formData.entityType !== EntityType.NATURAL_PERSON &&
+          !formData.companyName
+        ) {
+          newErrors['companyName'] = 'Firmenname erforderlich';
+          isValid = false;
+        }
+      }
+      if (currentStep === 2) {
+        if (!formData.city) {
+          newErrors['city'] = 'Stadt ist erforderlich';
+          isValid = false;
+        }
+      }
+      if (currentStep === 3) {
         if (formData.email && !emailRegex.test(formData.email)) {
           newErrors['email'] = 'Ungültiges E-Mail Format';
           isValid = false;
@@ -460,25 +544,37 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
       }
     } else if (type === 'CLIENT') {
       if (currentStep === 1) {
+        if (!formData.entityType) {
+          newErrors['entityType'] = 'Bitte Typ auswählen';
+          isValid = false;
+        }
         if (!formData.name) {
           newErrors['name'] = 'Firmenname ist erforderlich';
           isValid = false;
         }
       }
       if (currentStep === 2) {
-        if (!formData.email) {
-          newErrors['email'] = 'E-Mail ist erforderlich';
+        if (!formData.city) {
+          newErrors['city'] = 'Stadt ist erforderlich';
           isValid = false;
         }
-        if (!formData.iban) {
-          newErrors['iban'] = 'IBAN ist erforderlich';
+      }
+      if (currentStep === 3) {
+        if (formData.contactEmail && !emailRegex.test(formData.contactEmail)) {
+          newErrors['contactEmail'] = 'Ungültiges E-Mail Format';
+          isValid = false;
+        }
+      }
+      if (currentStep === 4) {
+        if (!formData.bankAccountIBAN) {
+          newErrors['bankAccountIBAN'] = 'IBAN ist erforderlich';
           isValid = false;
         }
       }
     } else if (type === 'CLAIM') {
       if (currentStep === 1) {
         // Only validate tenant if user is not a client (who has it auto-set)
-        if (currentUser?.role !== UserRole.CLIENT && !formData.tenantId) {
+        if (currentUser?.role !== UserRole.CLIENT && !formData.kreditorId) {
           newErrors['tenantId'] = 'Bitte Mandant auswählen';
           isValid = false;
         }
@@ -515,20 +611,44 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
         // Create Debtor immediately
         const newDebtor: Debtor = {
           id: `d-inline-${Date.now()}`,
-          tenantId: formData.tenantId || 't1',
-          isCompany: !!formData.companyName,
+          kreditorId: formData.kreditorId || 't1',
+          entityType: formData.entityType || EntityType.NATURAL_PERSON,
           companyName: formData.companyName,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          birthName: formData.birthName,
+          gender: formData.gender,
+          dateOfBirth: formData.dateOfBirth,
+          birthPlace: formData.birthPlace,
+          birthCountry: formData.birthCountry,
           email: formData.email || '',
-          phone: formData.phone || '',
-          address: {
-            street: formData.address?.street || '',
-            zipCode: formData.address?.zipCode || '',
-            city: formData.address?.city || '',
-            country: 'Deutschland',
-            status: AddressStatus.CONFIRMED,
-          },
+          phoneLandline: formData.phoneLandline || '',
+          phoneMobile: formData.phoneMobile || '',
+          fax: formData.fax,
+          street: formData.street || '',
+          houseNumber: formData.houseNumber,
+          floor: formData.floor,
+          doorPosition: formData.doorPosition,
+          additionalAddressInfo: formData.additionalAddressInfo,
+          zipCode: formData.zipCode || '',
+          city: formData.city || '',
+          cityDistrict: formData.cityDistrict,
+          country: formData.country || 'Deutschland',
+          poBox: formData.poBox,
+          poBoxZipCode: formData.poBoxZipCode,
+          addressStatus: AddressStatus.CONFIRMED,
+          eboAddress: formData.eboAddress,
+          isDeceased: formData.isDeceased,
+          placeOfDeath: formData.placeOfDeath,
+          bankIBAN: formData.bankIBAN,
+          bankBIC: formData.bankBIC,
+          bankName: formData.bankName,
+          registerCourt: formData.registerCourt,
+          registerNumber: formData.registerNumber,
+          vatId: formData.vatId,
+          partners: formData.partners,
+          representedBy: formData.representedBy,
+          fileReference: formData.fileReference,
           riskScore: RiskScore.C,
           totalDebt: 0,
           openCases: 0,
@@ -553,6 +673,56 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
     }
   };
 
+  const checkForDuplicates = async () => {
+    setLoading(true);
+    try {
+      if (type === 'DEBTOR' && formData.email) {
+        // Check for duplicate debtor by email
+        const results = await debtorsApi.getAll({ email: formData.email });
+        if (results.data && results.data.length > 0) {
+          setDuplicateCheckResult({
+            hasDuplicates: true,
+            message: `${results.data.length} Schuldner mit dieser E-Mail-Adresse gefunden`,
+            duplicates: results.data,
+          });
+        } else {
+          setDuplicateCheckResult({
+            hasDuplicates: false,
+            message: 'Keine Duplikate gefunden',
+          });
+        }
+      } else if (type === 'CLAIM' && formData.invoiceNumber) {
+        // Check for duplicate case by invoice number
+        const results = await casesApi.getAll({ invoiceNumber: formData.invoiceNumber });
+        if (results.data && results.data.length > 0) {
+          setDuplicateCheckResult({
+            hasDuplicates: true,
+            message: `${results.data.length} Fall mit dieser Rechnungsnummer gefunden`,
+            duplicates: results.data,
+          });
+        } else {
+          setDuplicateCheckResult({
+            hasDuplicates: false,
+            message: 'Keine Duplikate gefunden',
+          });
+        }
+      } else {
+        setDuplicateCheckResult({
+          hasDuplicates: false,
+          message: 'Keine Duplikate gefunden',
+        });
+      }
+    } catch (error) {
+      logger.error('Duplicate check failed', error);
+      setDuplicateCheckResult({
+        hasDuplicates: false,
+        message: 'Duplikatprüfung fehlgeschlagen',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateStep(step)) return;
     setLoading(true);
@@ -561,60 +731,130 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
       if (type === 'DEBTOR') {
         const newDebtor: Debtor = {
           id: `d-${Date.now()}`,
-          tenantId: 't1',
-          isCompany: !!formData.companyName,
+          kreditorId: 't1',
+          entityType: formData.entityType || EntityType.NATURAL_PERSON,
           companyName: formData.companyName,
           firstName: formData.firstName,
           lastName: formData.lastName,
+          birthName: formData.birthName,
+          gender: formData.gender,
+          dateOfBirth: formData.dateOfBirth,
+          birthPlace: formData.birthPlace,
+          birthCountry: formData.birthCountry,
           email: formData.email || '',
-          phone: formData.phone || '',
-          address: {
-            street: formData.address?.street || '',
-            zipCode: formData.address?.zipCode || '',
-            city: formData.address?.city || '',
-            country: 'Deutschland',
-            status: AddressStatus.CONFIRMED,
-          },
+          phoneLandline: formData.phoneLandline || '',
+          phoneMobile: formData.phoneMobile || '',
+          fax: formData.fax,
+          street: formData.street || '',
+          houseNumber: formData.houseNumber,
+          floor: formData.floor,
+          doorPosition: formData.doorPosition,
+          additionalAddressInfo: formData.additionalAddressInfo,
+          zipCode: formData.zipCode || '',
+          city: formData.city || '',
+          cityDistrict: formData.cityDistrict,
+          country: formData.country || 'Deutschland',
+          poBox: formData.poBox,
+          poBoxZipCode: formData.poBoxZipCode,
+          addressStatus: AddressStatus.CONFIRMED,
+          eboAddress: formData.eboAddress,
+          isDeceased: formData.isDeceased,
+          placeOfDeath: formData.placeOfDeath,
+          bankIBAN: formData.bankIBAN,
+          bankBIC: formData.bankBIC,
+          bankName: formData.bankName,
+          registerCourt: formData.registerCourt,
+          registerNumber: formData.registerNumber,
+          vatId: formData.vatId,
+          partners: formData.partners,
+          representedBy: formData.representedBy,
+          fileReference: formData.fileReference,
           riskScore: RiskScore.C,
           totalDebt: 0,
           openCases: 0,
           notes: formData.notes,
         };
-        await debtorsApi.create(newDebtor);
+        const createdDebtor = await debtorsApi.create(newDebtor);
+        setCreatedId(createdDebtor?.id || newDebtor.id);
       } else if (type === 'CLIENT') {
-        const newTenant: Tenant = {
+        const newKreditor: Kreditor = {
           id: `t-${Date.now()}`,
+          entityType: formData.entityType || EntityType.LEGAL_ENTITY,
           name: formData.name,
-          registrationNumber: formData.regNumber || '',
-          contactEmail: formData.email,
-          bankAccountIBAN: formData.iban,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          birthName: formData.birthName,
+          gender: formData.gender,
+          dateOfBirth: formData.dateOfBirth,
+          birthPlace: formData.birthPlace,
+          birthCountry: formData.birthCountry,
+          registrationNumber: formData.registrationNumber || '',
+          registerCourt: formData.registerCourt,
+          vatId: formData.vatId,
+          contactEmail: formData.contactEmail || '',
+          phoneLandline: formData.phoneLandline,
+          phoneMobile: formData.phoneMobile,
+          fax: formData.fax,
+          eboAddress: formData.eboAddress,
+          street: formData.street,
+          houseNumber: formData.houseNumber,
+          zipCode: formData.zipCode,
+          city: formData.city,
+          cityDistrict: formData.cityDistrict,
+          floor: formData.floor,
+          doorPosition: formData.doorPosition,
+          additionalAddressInfo: formData.additionalAddressInfo,
+          poBox: formData.poBox,
+          poBoxZipCode: formData.poBoxZipCode,
+          country: formData.country || 'Deutschland',
+          representedBy: formData.representedBy,
+          isDeceased: formData.isDeceased,
+          placeOfDeath: formData.placeOfDeath,
+          bankAccountIBAN: formData.bankAccountIBAN || '',
+          bankBIC: formData.bankBIC,
+          bankName: formData.bankName,
+          partners: formData.partners,
+          fileReference: formData.fileReference,
         };
-        await tenantsApi.create(newTenant);
+        const createdKreditor = await kreditorenApi.create(newKreditor);
+        setCreatedId(createdKreditor?.id || newKreditor.id);
       } else if (type === 'CLAIM') {
         const selectedDebtor = availableDebtors.find((d) => d.id === formData.debtorId);
-        const selectedTenant = availableTenants.find((t) => t.id === formData.tenantId);
+        const selectedKreditor = availableKreditoren.find((t) => t.id === formData.kreditorId);
 
         const newCase: CollectionCase = {
           id: `c-${Date.now()}`,
-          tenantId: formData.tenantId,
-          tenantName: selectedTenant?.name,
+          kreditorId: formData.kreditorId,
+          kreditorName: selectedKreditor?.name,
           debtorId: formData.debtorId,
           debtorName:
             selectedDebtor?.companyName ||
             `${selectedDebtor?.lastName}, ${selectedDebtor?.firstName}`,
           principalAmount: parseFloat(formData.amount || '0'),
           costs: 5.0,
-          interest: 0,
+          interest: parseFloat(formData.interestRate || '0'),
           totalAmount: parseFloat(formData.amount || '0') + 5.0,
           currency: 'EUR',
           invoiceNumber: formData.invoiceNumber,
           invoiceDate: formData.invoiceDate || new Date().toISOString(),
           dueDate: formData.dueDate || new Date().toISOString(),
           status: CaseStatus.NEW,
+          dateOfOrigin: formData.dateOfOrigin,
+          claimDescription: formData.claimDescription,
+          interestStartDate: formData.interestStartDate,
+          interestRate: parseFloat(formData.interestRate || '0'),
+          isVariableInterest: formData.isVariableInterest || false,
+          interestEndDate: formData.interestEndDate,
+          additionalCosts: parseFloat(formData.additionalCosts || '0'),
+          procedureCosts: parseFloat(formData.procedureCosts || '0'),
+          interestOnCosts: formData.interestOnCosts || false,
+          statuteOfLimitationsDate: formData.statuteOfLimitationsDate,
+          paymentAllocationNotes: formData.paymentAllocationNotes,
           history: [],
           aiAnalysis: 'Initial Assessment Pending',
         };
-        await casesApi.create(newCase);
+        const createdCase = await casesApi.create(newCase);
+        setCreatedId(createdCase?.id || newCase.id);
       }
 
       setLoading(false);
@@ -622,7 +862,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
       if (onSuccess) setTimeout(onSuccess, 1500);
     } catch (e) {
       setLoading(false);
-      console.error(e);
+      logger.error(e);
     }
   };
 
@@ -740,27 +980,6 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
             <X size={24} />
           </button>
 
-          {/* Voice Fill Trigger - Top Right */}
-          {!isSuccess && (
-            <div className="absolute top-6 right-16 z-50">
-              <Button
-                size="sm"
-                variant="glow"
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={isProcessingVoice}
-                className={`rounded-full px-4 transition-all duration-300 ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse shadow-red-500/50' : ''}`}
-              >
-                {isProcessingVoice ? (
-                  <Loader2 size={14} className="animate-spin mr-2" />
-                ) : isRecording ? (
-                  <StopCircle size={14} className="mr-2" />
-                ) : (
-                  <Mic size={14} className="mr-2" />
-                )}
-                {isProcessingVoice ? 'Verarbeite...' : isRecording ? 'Stop' : 'AI Voice Fill'}
-              </Button>
-            </div>
-          )}
 
           {/* Mobile Header */}
           <div className="md:hidden mb-6 pr-8">
@@ -786,7 +1005,39 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                 <Button variant="secondary" onClick={onClose}>
                   Schließen
                 </Button>
-                {type === 'DEBTOR' && <Button variant="glow">Akte öffnen</Button>}
+                {type === 'DEBTOR' && (
+                  <Button
+                    variant="glow"
+                    onClick={() => {
+                      navigate(`#/debtors/${createdId}`);
+                      onClose();
+                    }}
+                  >
+                    Akte öffnen
+                  </Button>
+                )}
+                {type === 'CLIENT' && (
+                  <Button
+                    variant="glow"
+                    onClick={() => {
+                      navigate(`#/clients/${createdId}`);
+                      onClose();
+                    }}
+                  >
+                    Mandant öffnen
+                  </Button>
+                )}
+                {type === 'CLAIM' && (
+                  <Button
+                    variant="glow"
+                    onClick={() => {
+                      navigate(`#/claims`);
+                      onClose();
+                    }}
+                  >
+                    Zur Übersicht
+                  </Button>
+                )}
               </div>
             </div>
           ) : (
@@ -796,141 +1047,598 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
               <div className="flex-1 space-y-6 min-h-[300px]">
                 {/* --- DEBTOR STEPS --- */}
                 {(type === 'DEBTOR' || (type === 'CLAIM' && step === 1 && isCreatingDebtor)) && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    {isCreatingDebtor && (
-                      <div className="flex items-center gap-2 mb-4 text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300 px-3 py-2 rounded-lg">
-                        <UserPlus size={16} />
-                        <span className="font-bold">Neuen Schuldner anlegen</span>
+                  <>
+                    {/* Step 1: Entity Type & Identity */}
+                    {step === 1 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        {isCreatingDebtor && (
+                          <div className="flex items-center gap-2 mb-4 text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300 px-3 py-2 rounded-lg">
+                            <UserPlus size={16} />
+                            <span className="font-bold">Neuen Schuldner anlegen</span>
+                          </div>
+                        )}
+
+                        <SelectDropdown
+                          label="Rechtsform *"
+                          placeholder="Bitte wählen..."
+                          options={[
+                            { value: EntityType.NATURAL_PERSON, label: 'Natürliche Person' },
+                            { value: EntityType.LEGAL_ENTITY, label: 'Juristische Person (GmbH, AG, etc.)' },
+                            { value: EntityType.PARTNERSHIP, label: 'Personengesellschaft (GbR, OHG, KG)' },
+                          ]}
+                          value={formData.entityType || ''}
+                          onChange={(val) => handleInput('entityType', val)}
+                          error={errors['entityType']}
+                        />
+
+                        {/* Natural Person Fields */}
+                        {formData.entityType === EntityType.NATURAL_PERSON && (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <Input
+                                label="Vorname *"
+                                placeholder="Max"
+                                value={formData.firstName || ''}
+                                onChange={(e) => handleInput('firstName', e.target.value)}
+                                error={errors['firstName']}
+                              />
+                              <Input
+                                label="Nachname *"
+                                placeholder="Mustermann"
+                                value={formData.lastName || ''}
+                                onChange={(e) => handleInput('lastName', e.target.value)}
+                                error={errors['lastName']}
+                              />
+                            </div>
+
+                            <CollapsibleSection title="Erweiterte Personendaten" defaultOpen={false}>
+                              <Input
+                                label="Geburtsname"
+                                placeholder="Schmidt"
+                                value={formData.birthName || ''}
+                                onChange={(e) => handleInput('birthName', e.target.value)}
+                              />
+                              <SelectDropdown
+                                label="Geschlecht"
+                                placeholder="Bitte wählen..."
+                                options={[
+                                  { value: Gender.MALE, label: 'Männlich' },
+                                  { value: Gender.FEMALE, label: 'Weiblich' },
+                                  { value: Gender.DIVERSE, label: 'Divers' },
+                                ]}
+                                value={formData.gender || ''}
+                                onChange={(val) => handleInput('gender', val)}
+                              />
+                              <div className="grid grid-cols-3 gap-4">
+                                <Input
+                                  label="Geburtsdatum"
+                                  type="date"
+                                  value={formData.dateOfBirth || ''}
+                                  onChange={(e) => handleInput('dateOfBirth', e.target.value)}
+                                />
+                                <Input
+                                  label="Geburtsort"
+                                  placeholder="Berlin"
+                                  value={formData.birthPlace || ''}
+                                  onChange={(e) => handleInput('birthPlace', e.target.value)}
+                                />
+                                <Input
+                                  label="Geburtsland"
+                                  placeholder="Deutschland"
+                                  value={formData.birthCountry || ''}
+                                  onChange={(e) => handleInput('birthCountry', e.target.value)}
+                                />
+                              </div>
+                            </CollapsibleSection>
+                          </>
+                        )}
+
+                        {/* Legal Entity Fields */}
+                        {formData.entityType === EntityType.LEGAL_ENTITY && (
+                          <>
+                            <Input
+                              label="Firmenname *"
+                              placeholder="Musterfirma GmbH"
+                              value={formData.companyName || ''}
+                              onChange={(e) => handleInput('companyName', e.target.value)}
+                              error={errors['companyName']}
+                            />
+                            <div className="grid grid-cols-3 gap-4">
+                              <Input
+                                label="Handelsregister"
+                                placeholder="Amtsgericht Berlin"
+                                value={formData.registerCourt || ''}
+                                onChange={(e) => handleInput('registerCourt', e.target.value)}
+                              />
+                              <Input
+                                label="HRB-Nummer"
+                                placeholder="HRB 12345"
+                                value={formData.registerNumber || ''}
+                                onChange={(e) => handleInput('registerNumber', e.target.value)}
+                              />
+                              <Input
+                                label="USt-ID"
+                                placeholder="DE123456789"
+                                value={formData.vatId || ''}
+                                onChange={(e) => handleInput('vatId', e.target.value)}
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Partnership Fields */}
+                        {formData.entityType === EntityType.PARTNERSHIP && (
+                          <>
+                            <Input
+                              label="Firmenname *"
+                              placeholder="Musterfirma GbR"
+                              value={formData.companyName || ''}
+                              onChange={(e) => handleInput('companyName', e.target.value)}
+                              error={errors['companyName']}
+                            />
+                            <div>
+                              <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                                Gesellschafter
+                              </label>
+                              <textarea
+                                className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none resize-none h-20 border-slate-200 dark:border-white/10"
+                                placeholder="Max Mustermann, Erika Musterfrau"
+                                value={formData.partners || ''}
+                                onChange={(e) => handleInput('partners', e.target.value)}
+                              ></textarea>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Common Fields */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Vertreten durch"
+                            placeholder="Name des Vertreters"
+                            value={formData.representedBy || ''}
+                            onChange={(e) => handleInput('representedBy', e.target.value)}
+                          />
+                          <Input
+                            label="Aktenzeichen"
+                            placeholder="AZ-2024-001"
+                            value={formData.fileReference || ''}
+                            onChange={(e) => handleInput('fileReference', e.target.value)}
+                          />
+                        </div>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Vorname"
-                        placeholder="Max"
-                        value={formData.firstName || ''}
-                        onChange={(e) => handleInput('firstName', e.target.value)}
-                        error={errors['firstName']}
-                      />
-                      <Input
-                        label="Nachname"
-                        placeholder="Mustermann"
-                        value={formData.lastName || ''}
-                        onChange={(e) => handleInput('lastName', e.target.value)}
-                        error={errors['lastName']}
-                      />
-                    </div>
-                    <Input
-                      label="Firma (Optional)"
-                      placeholder="Musterfirma GmbH"
-                      value={formData.companyName || ''}
-                      onChange={(e) => handleInput('companyName', e.target.value)}
-                      error={errors['companyName']}
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        label="E-Mail"
-                        type="email"
-                        placeholder="max@example.com"
-                        value={formData.email || ''}
-                        onChange={(e) => handleInput('email', e.target.value)}
-                        error={errors['email']}
-                      />
-                      <Input
-                        label="Telefon"
-                        type="tel"
-                        placeholder="+49 ..."
-                        value={formData.phone || ''}
-                        onChange={(e) => handleInput('phone', e.target.value)}
-                      />
-                    </div>
 
-                    {/* Address Part - Merged for simplicity in inline mode */}
-                    <div className="border-t border-slate-100 dark:border-white/5 pt-4 mt-2">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Anschrift</h4>
-                      <Input
-                        label="Straße & Hausnummer"
-                        placeholder="Hauptstraße 1"
-                        value={formData.address?.street || ''}
-                        onChange={(e) => handleNestedInput('address', 'street', e.target.value)}
-                        className="mb-4"
-                      />
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-1">
+                    {/* Step 2: Address */}
+                    {step === 2 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase">Hauptadresse</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-2">
+                            <Input
+                              label="Straße"
+                              placeholder="Hauptstraße"
+                              value={formData.street || ''}
+                              onChange={(e) => handleInput('street', e.target.value)}
+                            />
+                          </div>
                           <Input
-                            label="PLZ"
-                            placeholder="12345"
-                            value={formData.address?.zipCode || ''}
-                            onChange={(e) =>
-                              handleNestedInput('address', 'zipCode', e.target.value)
-                            }
+                            label="Hausnummer"
+                            placeholder="1a"
+                            value={formData.houseNumber || ''}
+                            onChange={(e) => handleInput('houseNumber', e.target.value)}
                           />
                         </div>
-                        <div className="col-span-2">
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-1">
+                            <Input
+                              label="PLZ"
+                              placeholder="12345"
+                              value={formData.zipCode || ''}
+                              onChange={(e) => handleInput('zipCode', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <Input
+                              label="Stadt *"
+                              placeholder="Berlin"
+                              value={formData.city || ''}
+                              onChange={(e) => handleInput('city', e.target.value)}
+                              error={errors['city']}
+                            />
+                          </div>
+                        </div>
+
+                        <CollapsibleSection title="Erweiterte Adressangaben" defaultOpen={false}>
                           <Input
-                            label="Stadt"
-                            placeholder="Berlin"
-                            value={formData.address?.city || ''}
-                            onChange={(e) => handleNestedInput('address', 'city', e.target.value)}
-                            error={errors['address.city']}
+                            label="Stadtteil / Ortsteil"
+                            placeholder="Mitte"
+                            value={formData.cityDistrict || ''}
+                            onChange={(e) => handleInput('cityDistrict', e.target.value)}
                           />
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              label="Etage"
+                              placeholder="3"
+                              value={formData.floor || ''}
+                              onChange={(e) => handleInput('floor', e.target.value)}
+                            />
+                            <SelectDropdown
+                              label="Türlage"
+                              placeholder="Bitte wählen..."
+                              options={[
+                                { value: DoorPosition.LEFT, label: 'Links' },
+                                { value: DoorPosition.RIGHT, label: 'Rechts' },
+                                { value: DoorPosition.MIDDLE, label: 'Mitte' },
+                              ]}
+                              value={formData.doorPosition || ''}
+                              onChange={(val) => handleInput('doorPosition', val)}
+                            />
+                          </div>
+                          <Input
+                            label="Adresszusatz (c/o, bei, etc.)"
+                            placeholder="c/o Müller"
+                            value={formData.additionalAddressInfo || ''}
+                            onChange={(e) => handleInput('additionalAddressInfo', e.target.value)}
+                          />
+                          <Input
+                            label="Land"
+                            placeholder="Deutschland"
+                            value={formData.country || 'Deutschland'}
+                            onChange={(e) => handleInput('country', e.target.value)}
+                          />
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Postfach-Adresse" defaultOpen={false}>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              label="Postfach"
+                              placeholder="Postfach 12 34 56"
+                              value={formData.poBox || ''}
+                              onChange={(e) => handleInput('poBox', e.target.value)}
+                            />
+                            <Input
+                              label="Postfach PLZ"
+                              placeholder="10001"
+                              value={formData.poBoxZipCode || ''}
+                              onChange={(e) => handleInput('poBoxZipCode', e.target.value)}
+                            />
+                          </div>
+                        </CollapsibleSection>
+                      </div>
+                    )}
+
+                    {/* Step 3: Contact */}
+                    {step === 3 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <Input
+                          label="E-Mail"
+                          type="email"
+                          placeholder="max@example.com"
+                          value={formData.email || ''}
+                          onChange={(e) => handleInput('email', e.target.value)}
+                          error={errors['email']}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label="Telefon (Festnetz)"
+                            type="tel"
+                            placeholder="+49 30 12345678"
+                            value={formData.phoneLandline || ''}
+                            onChange={(e) => handleInput('phoneLandline', e.target.value)}
+                          />
+                          <Input
+                            label="Telefon (Mobil)"
+                            type="tel"
+                            placeholder="+49 160 12345678"
+                            value={formData.phoneMobile || ''}
+                            onChange={(e) => handleInput('phoneMobile', e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Fax"
+                            type="tel"
+                            placeholder="+49 30 12345679"
+                            value={formData.fax || ''}
+                            onChange={(e) => handleInput('fax', e.target.value)}
+                          />
+                          <Input
+                            label="EBO-Adresse"
+                            placeholder="EBO12345"
+                            value={formData.eboAddress || ''}
+                            onChange={(e) => handleInput('eboAddress', e.target.value)}
+                          />
+                        </div>
+
+                        {formData.entityType === EntityType.NATURAL_PERSON && (
+                          <CollapsibleSection title="Verstorben" defaultOpen={false}>
+                            <div className="flex items-center gap-3 mb-4">
+                              <input
+                                type="checkbox"
+                                id="isDeceased"
+                                checked={formData.isDeceased || false}
+                                onChange={(e) => handleInput('isDeceased', e.target.checked)}
+                                className="w-4 h-4 text-monetaris-600 bg-slate-100 border-slate-300 rounded focus:ring-monetaris-500 dark:focus:ring-monetaris-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                              />
+                              <label
+                                htmlFor="isDeceased"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                              >
+                                Person ist verstorben
+                              </label>
+                            </div>
+                            {formData.isDeceased && (
+                              <Input
+                                label="Sterbeort"
+                                placeholder="Berlin"
+                                value={formData.placeOfDeath || ''}
+                                onChange={(e) => handleInput('placeOfDeath', e.target.value)}
+                              />
+                            )}
+                          </CollapsibleSection>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Step 4: Banking & Notes */}
+                    {step === 4 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase">Bankverbindung</h4>
+                        <Input
+                          label="IBAN"
+                          placeholder="DE89 3704 0044 0532 0130 00"
+                          value={formData.bankIBAN || ''}
+                          onChange={(e) => handleInput('bankIBAN', e.target.value)}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="BIC"
+                            placeholder="COBADEFFXXX"
+                            value={formData.bankBIC || ''}
+                            onChange={(e) => handleInput('bankBIC', e.target.value)}
+                          />
+                          <Input
+                            label="Bank"
+                            placeholder="Commerzbank AG"
+                            value={formData.bankName || ''}
+                            onChange={(e) => handleInput('bankName', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="border-t border-slate-100 dark:border-white/5 pt-4 mt-6">
+                          <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                            Notizen
+                          </label>
+                          <textarea
+                            className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none resize-none h-24 border-slate-200 dark:border-white/10"
+                            placeholder="Interne Anmerkungen zum Schuldner..."
+                            value={formData.notes || ''}
+                            onChange={(e) => handleInput('notes', e.target.value)}
+                          ></textarea>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {type === 'DEBTOR' && step === 2 && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    <div>
-                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
-                        Notizen
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-900 placeholder:text-slate-400 font-medium transition-all text-sm dark:bg-white/5 dark:border-white/10 dark:text-white focus:ring-4 focus:ring-slate-100 dark:focus:ring-white/5 outline-none resize-none h-24 border-slate-200 dark:border-white/10"
-                        placeholder="Interne Anmerkungen zum Schuldner..."
-                        value={formData.notes || ''}
-                        onChange={(e) => handleInput('notes', e.target.value)}
-                      ></textarea>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
 
                 {/* --- CLIENT STEPS --- */}
-                {type === 'CLIENT' && step === 1 && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    <Input
-                      label="Firmenname"
-                      placeholder="TechCorp GmbH"
-                      value={formData.name || ''}
-                      onChange={(e) => handleInput('name', e.target.value)}
-                      error={errors['name']}
-                    />
-                    <Input
-                      label="Handelsregister"
-                      placeholder="HRB 12345"
-                      value={formData.regNumber || ''}
-                      onChange={(e) => handleInput('regNumber', e.target.value)}
-                    />
-                  </div>
-                )}
-                {type === 'CLIENT' && step === 2 && (
-                  <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    <Input
-                      label="Kontakt E-Mail"
-                      type="email"
-                      placeholder="billing@firma.de"
-                      value={formData.email || ''}
-                      onChange={(e) => handleInput('email', e.target.value)}
-                      error={errors['email']}
-                    />
-                    <Input
-                      label="IBAN"
-                      placeholder="DE00 0000 ..."
-                      value={formData.iban || ''}
-                      onChange={(e) => handleInput('iban', e.target.value)}
-                      error={errors['iban']}
-                    />
-                  </div>
+                {type === 'CLIENT' && (
+                  <>
+                    {/* Step 1: Company Profile */}
+                    {step === 1 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <SelectDropdown
+                          label="Rechtsform *"
+                          placeholder="Bitte wählen..."
+                          options={[
+                            { value: EntityType.NATURAL_PERSON, label: 'Natürliche Person' },
+                            { value: EntityType.LEGAL_ENTITY, label: 'Juristische Person (GmbH, AG, etc.)' },
+                            { value: EntityType.PARTNERSHIP, label: 'Personengesellschaft (GbR, OHG, KG)' },
+                          ]}
+                          value={formData.entityType || EntityType.LEGAL_ENTITY}
+                          onChange={(val) => handleInput('entityType', val)}
+                          error={errors['entityType']}
+                        />
+
+                        <Input
+                          label="Firmenname *"
+                          placeholder="TechCorp GmbH"
+                          value={formData.name || ''}
+                          onChange={(e) => handleInput('name', e.target.value)}
+                          error={errors['name']}
+                        />
+
+                        {formData.entityType === EntityType.LEGAL_ENTITY && (
+                          <div className="grid grid-cols-3 gap-4">
+                            <Input
+                              label="Handelsregister"
+                              placeholder="Amtsgericht Berlin"
+                              value={formData.registerCourt || ''}
+                              onChange={(e) => handleInput('registerCourt', e.target.value)}
+                            />
+                            <Input
+                              label="Registernummer"
+                              placeholder="HRB 12345"
+                              value={formData.registrationNumber || ''}
+                              onChange={(e) => handleInput('registrationNumber', e.target.value)}
+                            />
+                            <Input
+                              label="USt-ID"
+                              placeholder="DE123456789"
+                              value={formData.vatId || ''}
+                              onChange={(e) => handleInput('vatId', e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {formData.entityType === EntityType.PARTNERSHIP && (
+                          <div>
+                            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                              Gesellschafter
+                            </label>
+                            <textarea
+                              className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none resize-none h-20 border-slate-200 dark:border-white/10"
+                              placeholder="Max Mustermann, Erika Musterfrau"
+                              value={formData.partners || ''}
+                              onChange={(e) => handleInput('partners', e.target.value)}
+                            ></textarea>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Step 2: Address */}
+                    {step === 2 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase">Firmensitz</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-2">
+                            <Input
+                              label="Straße"
+                              placeholder="Hauptstraße"
+                              value={formData.street || ''}
+                              onChange={(e) => handleInput('street', e.target.value)}
+                            />
+                          </div>
+                          <Input
+                            label="Hausnummer"
+                            placeholder="1"
+                            value={formData.houseNumber || ''}
+                            onChange={(e) => handleInput('houseNumber', e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-1">
+                            <Input
+                              label="PLZ"
+                              placeholder="12345"
+                              value={formData.zipCode || ''}
+                              onChange={(e) => handleInput('zipCode', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <Input
+                              label="Stadt *"
+                              placeholder="Berlin"
+                              value={formData.city || ''}
+                              onChange={(e) => handleInput('city', e.target.value)}
+                              error={errors['city']}
+                            />
+                          </div>
+                        </div>
+
+                        <CollapsibleSection title="Erweiterte Adressangaben" defaultOpen={false}>
+                          <Input
+                            label="Stadtteil"
+                            placeholder="Mitte"
+                            value={formData.cityDistrict || ''}
+                            onChange={(e) => handleInput('cityDistrict', e.target.value)}
+                          />
+                          <Input
+                            label="Adresszusatz"
+                            placeholder="Gebäude A"
+                            value={formData.additionalAddressInfo || ''}
+                            onChange={(e) => handleInput('additionalAddressInfo', e.target.value)}
+                          />
+                          <Input
+                            label="Land"
+                            placeholder="Deutschland"
+                            value={formData.country || 'Deutschland'}
+                            onChange={(e) => handleInput('country', e.target.value)}
+                          />
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Postfach-Adresse" defaultOpen={false}>
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              label="Postfach"
+                              placeholder="Postfach 12 34 56"
+                              value={formData.poBox || ''}
+                              onChange={(e) => handleInput('poBox', e.target.value)}
+                            />
+                            <Input
+                              label="Postfach PLZ"
+                              placeholder="10001"
+                              value={formData.poBoxZipCode || ''}
+                              onChange={(e) => handleInput('poBoxZipCode', e.target.value)}
+                            />
+                          </div>
+                        </CollapsibleSection>
+                      </div>
+                    )}
+
+                    {/* Step 3: Contact */}
+                    {step === 3 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <Input
+                          label="Kontakt E-Mail"
+                          type="email"
+                          placeholder="billing@firma.de"
+                          value={formData.contactEmail || ''}
+                          onChange={(e) => handleInput('contactEmail', e.target.value)}
+                          error={errors['contactEmail']}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label="Telefon (Festnetz)"
+                            type="tel"
+                            placeholder="+49 30 12345678"
+                            value={formData.phoneLandline || ''}
+                            onChange={(e) => handleInput('phoneLandline', e.target.value)}
+                          />
+                          <Input
+                            label="Telefon (Mobil)"
+                            type="tel"
+                            placeholder="+49 160 12345678"
+                            value={formData.phoneMobile || ''}
+                            onChange={(e) => handleInput('phoneMobile', e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="Fax"
+                            type="tel"
+                            placeholder="+49 30 12345679"
+                            value={formData.fax || ''}
+                            onChange={(e) => handleInput('fax', e.target.value)}
+                          />
+                          <Input
+                            label="EBO-Adresse"
+                            placeholder="EBO12345"
+                            value={formData.eboAddress || ''}
+                            onChange={(e) => handleInput('eboAddress', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 4: Banking */}
+                    {step === 4 && (
+                      <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                        <Input
+                          label="IBAN *"
+                          placeholder="DE89 3704 0044 0532 0130 00"
+                          value={formData.bankAccountIBAN || ''}
+                          onChange={(e) => handleInput('bankAccountIBAN', e.target.value)}
+                          error={errors['bankAccountIBAN']}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Input
+                            label="BIC"
+                            placeholder="COBADEFFXXX"
+                            value={formData.bankBIC || ''}
+                            onChange={(e) => handleInput('bankBIC', e.target.value)}
+                          />
+                          <Input
+                            label="Bank"
+                            placeholder="Commerzbank AG"
+                            value={formData.bankName || ''}
+                            onChange={(e) => handleInput('bankName', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* --- CLAIM STEPS --- */}
@@ -943,13 +1651,13 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                           label="Mandant (Gläubiger)"
                           placeholder="Mandant suchen..."
                           icon={Building2}
-                          options={availableTenants.map((t) => ({
+                          options={availableKreditoren.map((t) => ({
                             id: t.id,
                             title: t.name,
                             subtitle: `ID: ${t.id} • ${t.registrationNumber}`,
                           }))}
-                          value={formData.tenantId}
-                          onChange={(val) => handleInput('tenantId', val)}
+                          value={formData.kreditorId}
+                          onChange={(val) => handleInput('kreditorId', val)}
                           error={errors['tenantId']}
                         />
                       </div>
@@ -970,7 +1678,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                       options={availableDebtors.map((d) => ({
                         id: d.id,
                         title: d.companyName || `${d.lastName}, ${d.firstName}`,
-                        subtitle: `ID: ${d.id} • ${d.address.city}`,
+                        subtitle: `ID: ${d.id} • ${d.city}`,
                       }))}
                       value={formData.debtorId}
                       onChange={(val) => handleInput('debtorId', val)}
@@ -988,16 +1696,17 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                 )}
                 {type === 'CLAIM' && step === 2 && (
                   <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase">Basisdaten</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <Input
-                        label="Rechnungs-Nr."
+                        label="Rechnungs-Nr. *"
                         placeholder="RE-2024-001"
                         value={formData.invoiceNumber || ''}
                         onChange={(e) => handleInput('invoiceNumber', e.target.value)}
                         error={errors['invoiceNumber']}
                       />
                       <Input
-                        label="Betrag (€)"
+                        label="Hauptforderung (€) *"
                         type="number"
                         placeholder="1000.00"
                         value={formData.amount || ''}
@@ -1013,13 +1722,122 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                         onChange={(e) => handleInput('invoiceDate', e.target.value)}
                       />
                       <Input
-                        label="Fälligkeit"
+                        label="Fälligkeit *"
                         type="date"
                         value={formData.dueDate || ''}
                         onChange={(e) => handleInput('dueDate', e.target.value)}
                         error={errors['dueDate']}
                       />
                     </div>
+
+                    <CollapsibleSection title="Forderungsdetails" defaultOpen={false}>
+                      <Input
+                        label="Entstehungsdatum"
+                        type="date"
+                        value={formData.dateOfOrigin || ''}
+                        onChange={(e) => handleInput('dateOfOrigin', e.target.value)}
+                      />
+                      <div>
+                        <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                          Anspruchsgrund (Exakte Beschreibung)
+                        </label>
+                        <textarea
+                          className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none resize-none h-20 border-slate-200 dark:border-white/10"
+                          placeholder="Lieferung von Waren gemäß Rechnung vom..."
+                          value={formData.claimDescription || ''}
+                          onChange={(e) => handleInput('claimDescription', e.target.value)}
+                        ></textarea>
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Zinsen & Kosten" defaultOpen={false}>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input
+                          label="Zinsbeginn"
+                          type="date"
+                          value={formData.interestStartDate || ''}
+                          onChange={(e) => handleInput('interestStartDate', e.target.value)}
+                        />
+                        <Input
+                          label="Zinssatz (%)"
+                          type="number"
+                          step="0.01"
+                          placeholder="5.00"
+                          value={formData.interestRate || ''}
+                          onChange={(e) => handleInput('interestRate', e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <input
+                          type="checkbox"
+                          id="isVariableInterest"
+                          checked={formData.isVariableInterest || false}
+                          onChange={(e) => handleInput('isVariableInterest', e.target.checked)}
+                          className="w-4 h-4 text-monetaris-600 bg-slate-100 border-slate-300 rounded focus:ring-monetaris-500"
+                        />
+                        <label htmlFor="isVariableInterest" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Variabler Zinssatz (Basiszins gekoppelt)
+                        </label>
+                      </div>
+                      {!formData.isVariableInterest && (
+                        <Input
+                          label="Zinsende"
+                          type="date"
+                          value={formData.interestEndDate || ''}
+                          onChange={(e) => handleInput('interestEndDate', e.target.value)}
+                        />
+                      )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input
+                          label="Nebenkosten (€)"
+                          type="number"
+                          step="0.01"
+                          placeholder="50.00"
+                          value={formData.additionalCosts || ''}
+                          onChange={(e) => handleInput('additionalCosts', e.target.value)}
+                        />
+                        <Input
+                          label="Verfahrenskosten (€)"
+                          type="number"
+                          step="0.01"
+                          placeholder="100.00"
+                          value={formData.procedureCosts || ''}
+                          onChange={(e) => handleInput('procedureCosts', e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="interestOnCosts"
+                          checked={formData.interestOnCosts || false}
+                          onChange={(e) => handleInput('interestOnCosts', e.target.checked)}
+                          className="w-4 h-4 text-monetaris-600 bg-slate-100 border-slate-300 rounded focus:ring-monetaris-500"
+                        />
+                        <label htmlFor="interestOnCosts" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Zinslauf auch auf Verfahrenskosten
+                        </label>
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Rechtliche Hinweise" defaultOpen={false}>
+                      <Input
+                        label="Verjährungsdatum"
+                        type="date"
+                        value={formData.statuteOfLimitationsDate || ''}
+                        onChange={(e) => handleInput('statuteOfLimitationsDate', e.target.value)}
+                      />
+                      <div>
+                        <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 ml-1">
+                          Tilgungsvereinbarung (§§ 366, 367 BGB)
+                        </label>
+                        <textarea
+                          className="w-full px-4 py-3 border rounded-xl bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium transition-all text-sm focus:ring-4 focus:ring-monetaris-500/10 focus:border-monetaris-500 outline-none resize-none h-20 border-slate-200 dark:border-white/10"
+                          placeholder="Vereinbarung zur Zahlungsverrechnung..."
+                          value={formData.paymentAllocationNotes || ''}
+                          onChange={(e) => handleInput('paymentAllocationNotes', e.target.value)}
+                        ></textarea>
+                      </div>
+                    </CollapsibleSection>
                   </div>
                 )}
                 {type === 'CLAIM' && step === 3 && (
@@ -1043,7 +1861,7 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-500">Mandant</span>
                           <span className="font-bold dark:text-white">
-                            {availableTenants.find((t) => t.id === formData.tenantId)?.name}
+                            {availableKreditoren.find((t) => t.id === formData.kreditorId)?.name}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -1072,13 +1890,49 @@ export const CreationWizard: React.FC<CreationWizardProps> = ({
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
-                      <Check size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5" />
-                      <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                        Systemprüfung erfolgreich. Keine Duplikate gefunden. Bonitätsprüfung wird
-                        nach Erstellung initiiert.
-                      </p>
-                    </div>
+                    {duplicateCheckResult && (
+                      <div
+                        className={`flex items-start gap-3 p-4 rounded-xl border ${
+                          duplicateCheckResult.hasDuplicates
+                            ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20'
+                            : 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20'
+                        }`}
+                      >
+                        {duplicateCheckResult.hasDuplicates ? (
+                          <AlertCircle
+                            size={16}
+                            className="text-amber-600 dark:text-amber-400 mt-0.5"
+                          />
+                        ) : (
+                          <Check
+                            size={16}
+                            className="text-emerald-600 dark:text-emerald-400 mt-0.5"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p
+                            className={`text-xs font-medium ${
+                              duplicateCheckResult.hasDuplicates
+                                ? 'text-amber-800 dark:text-amber-300'
+                                : 'text-emerald-800 dark:text-emerald-300'
+                            }`}
+                          >
+                            {duplicateCheckResult.message}
+                          </p>
+                          {!duplicateCheckResult.hasDuplicates && (
+                            <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
+                              Bonitätsprüfung wird nach Erstellung initiiert.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {!duplicateCheckResult && loading && (
+                      <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900/20 rounded-xl">
+                        <Loader2 size={16} className="animate-spin mr-2 text-slate-500" />
+                        <span className="text-xs text-slate-500">Prüfe auf Duplikate...</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

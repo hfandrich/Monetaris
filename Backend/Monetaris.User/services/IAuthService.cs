@@ -33,4 +33,11 @@ public interface IAuthService
     /// Logout user by revoking refresh token
     /// </summary>
     Task<Result> LogoutAsync(string refreshToken);
+
+    /// <summary>
+    /// Initiate password reset process
+    /// Generates reset token and logs reset link (email sending not implemented yet)
+    /// Always returns success for security (don't reveal if email exists)
+    /// </summary>
+    Task<Result<ForgotPasswordResponse>> ForgotPasswordAsync(ForgotPasswordRequest request);
 }

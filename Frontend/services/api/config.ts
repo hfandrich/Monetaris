@@ -9,10 +9,13 @@ export const API_ENDPOINTS = {
     REFRESH: `${API_BASE_URL}/auth/refresh`,
     LOGOUT: `${API_BASE_URL}/auth/logout`,
     ME: `${API_BASE_URL}/auth/me`,
+    FORGOT_PASSWORD: `${API_BASE_URL}/auth/forgot-password`,
+    UPDATE_PROFILE: `${API_BASE_URL}/auth/profile`,
+    UPDATE_PASSWORD: `${API_BASE_URL}/auth/password`,
   },
-  // Kreditoren (Mandanten)
-  TENANTS: `${API_BASE_URL}/kreditoren`,
+  // Kreditoren (Mandanten/Tenants)
   KREDITOREN: `${API_BASE_URL}/kreditoren`,
+  TENANTS: `${API_BASE_URL}/kreditoren`, // Alias for KREDITOREN
   // Debtors
   DEBTORS: `${API_BASE_URL}/debtors`,
   // Cases
@@ -31,6 +34,10 @@ export const API_ENDPOINTS = {
     SEARCH: `${API_BASE_URL}/dashboard/search`,
   },
   SEARCH: `${API_BASE_URL}/search`,
+  // AI Assistant
+  AI: {
+    CHAT: `${API_BASE_URL}/ai/chat`,
+  },
 };
 
 export { API_BASE_URL };

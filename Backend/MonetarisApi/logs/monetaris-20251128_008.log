@@ -1,0 +1,216 @@
+2025-11-28 10:03:34.717 +01:00 [INF] Starting Monetaris API
+2025-11-28 10:03:35.205 +01:00 [INF] Applying database migrations...
+2025-11-28 10:03:36.065 +01:00 [INF] Executed DbCommand (14ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:03:36.254 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    migration_id character varying(150) NOT NULL,
+    product_version character varying(32) NOT NULL,
+    CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
+);
+2025-11-28 10:03:36.264 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-28 10:03:36.267 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2025-11-28 10:03:36.270 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:03:36.281 +01:00 [INF] No migrations were applied. The database is already up to date.
+2025-11-28 10:03:36.290 +01:00 [INF] Database migrations applied successfully
+2025-11-28 10:03:36.531 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM kreditoren AS k)
+2025-11-28 10:03:36.540 +01:00 [INF] Database already seeded, skipping...
+2025-11-28 10:03:36.680 +01:00 [INF] Monetaris API started successfully
+2025-11-28 10:03:36.709 +01:00 [INF] User profile is available. Using 'C:\Users\fandrich\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-11-28 10:03:36.811 +01:00 [INF] Now listening on: http://localhost:4002
+2025-11-28 10:03:36.812 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-11-28 10:03:36.812 +01:00 [INF] Hosting environment: Development
+2025-11-28 10:03:36.813 +01:00 [INF] Content root path: C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi
+2025-11-28 10:05:12.477 +01:00 [INF] Starting Monetaris API
+2025-11-28 10:05:13.207 +01:00 [INF] Applying database migrations...
+2025-11-28 10:05:14.157 +01:00 [ERR] Failed executing DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:05:14.317 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-28 10:05:14.340 +01:00 [INF] Applying migration '20251127084110_InitialCreate'.
+2025-11-28 10:05:14.550 +01:00 [INF] Applying migration '20251127111111_RenameTenantToKreditor'.
+2025-11-28 10:05:14.589 +01:00 [INF] Applying migration '20251128075247_AddInkassoFields'.
+2025-11-28 10:05:14.668 +01:00 [INF] Database migrations applied successfully
+2025-11-28 10:05:14.890 +01:00 [WRN] ==========================================================
+2025-11-28 10:05:14.891 +01:00 [WRN] STARTING DATABASE SEEDING WITH TEST DATA
+2025-11-28 10:05:14.891 +01:00 [WRN] SECURITY: Using fixed test passwords for E2E testing
+2025-11-28 10:05:14.891 +01:00 [WRN] ==========================================================
+2025-11-28 10:05:14.891 +01:00 [INF] Starting database seeding...
+2025-11-28 10:05:15.117 +01:00 [INF] Executed DbCommand (16ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?', @p4='?', @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?' (DbType = DateTime), @p13='?' (DbType = DateTime), @p14='?' (DbType = Int32), @p15='?', @p16='?' (DbType = Int32), @p17='?', @p18='?', @p19='?', @p20='?', @p21='?' (DbType = Int32), @p22='?', @p23='?' (DbType = Boolean), @p24='?', @p25='?', @p26='?', @p27='?', @p28='?', @p29='?', @p30='?', @p31='?', @p32='?', @p33='?', @p34='?', @p35='?', @p36='?' (DbType = DateTime), @p37='?', @p38='?', @p39='?' (DbType = Guid), @p40='?', @p41='?', @p42='?', @p43='?', @p44='?', @p45='?', @p46='?', @p47='?', @p48='?', @p49='?', @p50='?', @p51='?' (DbType = DateTime), @p52='?' (DbType = DateTime), @p53='?' (DbType = Int32), @p54='?', @p55='?' (DbType = Int32), @p56='?', @p57='?', @p58='?', @p59='?', @p60='?' (DbType = Int32), @p61='?', @p62='?' (DbType = Boolean), @p63='?', @p64='?', @p65='?', @p66='?', @p67='?', @p68='?', @p69='?', @p70='?', @p71='?', @p72='?', @p73='?', @p74='?', @p75='?' (DbType = DateTime), @p76='?', @p77='?', @p78='?' (DbType = Guid), @p79='?', @p80='?', @p81='?', @p82='?', @p83='?', @p84='?', @p85='?', @p86='?', @p87='?', @p88='?', @p89='?', @p90='?' (DbType = DateTime), @p91='?' (DbType = DateTime), @p92='?' (DbType = Int32), @p93='?', @p94='?' (DbType = Int32), @p95='?', @p96='?', @p97='?', @p98='?', @p99='?' (DbType = Int32), @p100='?', @p101='?' (DbType = Boolean), @p102='?', @p103='?', @p104='?', @p105='?', @p106='?', @p107='?', @p108='?', @p109='?', @p110='?', @p111='?', @p112='?', @p113='?', @p114='?' (DbType = DateTime), @p115='?', @p116='?', @p117='?' (DbType = Guid), @p118='?', @p119='?', @p120='?', @p121='?', @p122='?', @p123='?', @p124='?', @p125='?', @p126='?', @p127='?', @p128='?', @p129='?' (DbType = DateTime), @p130='?' (DbType = DateTime), @p131='?' (DbType = Int32), @p132='?', @p133='?' (DbType = Int32), @p134='?', @p135='?', @p136='?', @p137='?', @p138='?' (DbType = Int32), @p139='?', @p140='?' (DbType = Boolean), @p141='?', @p142='?', @p143='?', @p144='?', @p145='?', @p146='?', @p147='?', @p148='?', @p149='?', @p150='?', @p151='?', @p152='?', @p153='?' (DbType = DateTime), @p154='?', @p155='?', @p156='?' (DbType = Guid), @p157='?', @p158='?', @p159='?', @p160='?', @p161='?', @p162='?', @p163='?', @p164='?', @p165='?', @p166='?', @p167='?', @p168='?' (DbType = DateTime), @p169='?' (DbType = DateTime), @p170='?' (DbType = Int32), @p171='?', @p172='?' (DbType = Int32), @p173='?', @p174='?', @p175='?', @p176='?', @p177='?' (DbType = Int32), @p178='?', @p179='?' (DbType = Boolean), @p180='?', @p181='?', @p182='?', @p183='?', @p184='?', @p185='?', @p186='?', @p187='?', @p188='?', @p189='?', @p190='?', @p191='?', @p192='?' (DbType = DateTime), @p193='?', @p194='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53, @p54, @p55, @p56, @p57, @p58, @p59, @p60, @p61, @p62, @p63, @p64, @p65, @p66, @p67, @p68, @p69, @p70, @p71, @p72, @p73, @p74, @p75, @p76, @p77);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p78, @p79, @p80, @p81, @p82, @p83, @p84, @p85, @p86, @p87, @p88, @p89, @p90, @p91, @p92, @p93, @p94, @p95, @p96, @p97, @p98, @p99, @p100, @p101, @p102, @p103, @p104, @p105, @p106, @p107, @p108, @p109, @p110, @p111, @p112, @p113, @p114, @p115, @p116);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p117, @p118, @p119, @p120, @p121, @p122, @p123, @p124, @p125, @p126, @p127, @p128, @p129, @p130, @p131, @p132, @p133, @p134, @p135, @p136, @p137, @p138, @p139, @p140, @p141, @p142, @p143, @p144, @p145, @p146, @p147, @p148, @p149, @p150, @p151, @p152, @p153, @p154, @p155);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p156, @p157, @p158, @p159, @p160, @p161, @p162, @p163, @p164, @p165, @p166, @p167, @p168, @p169, @p170, @p171, @p172, @p173, @p174, @p175, @p176, @p177, @p178, @p179, @p180, @p181, @p182, @p183, @p184, @p185, @p186, @p187, @p188, @p189, @p190, @p191, @p192, @p193, @p194);
+2025-11-28 10:05:15.135 +01:00 [INF] Seeded 5 kreditoren
+2025-11-28 10:05:15.136 +01:00 [WRN] ==========================================================
+2025-11-28 10:05:15.136 +01:00 [WRN] FIXED TEST CREDENTIALS FOR E2E TESTING:
+2025-11-28 10:05:15.136 +01:00 [WRN] ==========================================================
+2025-11-28 10:05:15.136 +01:00 [WRN] admin@monetaris.com       → admin123
+2025-11-28 10:05:15.136 +01:00 [WRN] sarah@monetaris.com       → sarah123
+2025-11-28 10:05:15.136 +01:00 [WRN] max@monetaris.com         → max123
+2025-11-28 10:05:15.136 +01:00 [WRN] 007@monetaris.com         → bond123
+2025-11-28 10:05:15.136 +01:00 [WRN] lara@monetaris.com        → lara123
+2025-11-28 10:05:15.136 +01:00 [WRN] client@techsolutions.de   → client123
+2025-11-28 10:05:15.136 +01:00 [WRN] max@muster.de             → debtor123
+2025-11-28 10:05:15.136 +01:00 [WRN] ==========================================================
+2025-11-28 10:05:16.167 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Guid), @p6='?', @p7='?', @p8='?', @p9='?' (DbType = DateTime), @p10='?' (DbType = Guid), @p11='?', @p12='?' (DbType = DateTime), @p13='?', @p14='?' (DbType = Boolean), @p15='?' (DbType = Guid), @p16='?', @p17='?', @p18='?', @p19='?' (DbType = DateTime), @p20='?' (DbType = Guid), @p21='?', @p22='?' (DbType = DateTime), @p23='?', @p24='?' (DbType = Boolean), @p25='?' (DbType = Guid), @p26='?', @p27='?', @p28='?', @p29='?' (DbType = DateTime), @p30='?' (DbType = Guid), @p31='?', @p32='?' (DbType = DateTime), @p33='?', @p34='?' (DbType = Boolean), @p35='?' (DbType = Guid), @p36='?', @p37='?', @p38='?', @p39='?' (DbType = DateTime), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = DateTime), @p43='?', @p44='?' (DbType = Boolean), @p45='?' (DbType = Guid), @p46='?', @p47='?', @p48='?', @p49='?' (DbType = DateTime), @p50='?' (DbType = Guid), @p51='?', @p52='?' (DbType = DateTime), @p53='?', @p54='?' (DbType = Boolean), @p55='?' (DbType = Guid), @p56='?', @p57='?', @p58='?', @p59='?' (DbType = DateTime), @p60='?' (DbType = Guid), @p61='?', @p62='?' (DbType = DateTime), @p63='?', @p64='?' (DbType = Boolean), @p65='?' (DbType = Guid), @p66='?', @p67='?', @p68='?', @p69='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p50, @p51, @p52, @p53, @p54, @p55, @p56, @p57, @p58, @p59);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p60, @p61, @p62, @p63, @p64, @p65, @p66, @p67, @p68, @p69);
+2025-11-28 10:05:16.171 +01:00 [INF] Seeded 7 users with secure random passwords
+2025-11-28 10:05:16.171 +01:00 [WRN] IMPORTANT: Users MUST change password on first login!
+2025-11-28 10:05:16.262 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Guid), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = DateTime), @p16='?' (DbType = DateTime), @p17='?' (DbType = Int32), @p18='?', @p19='?', @p20='?' (DbType = Int32), @p21='?', @p22='?', @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Boolean), @p28='?' (DbType = Guid), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?', @p34='?', @p35='?', @p36='?', @p37='?', @p38='?', @p39='?', @p40='?', @p41='?', @p42='?', @p43='?' (DbType = Decimal), @p44='?' (DbType = DateTime), @p45='?', @p46='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO debtors (id, additional_address_info, address_last_checked, address_status, agent_id, bank_bic, bank_iban, bank_name, birth_country, birth_name, birth_place, city, city_district, company_name, country, created_at, date_of_birth, door_position, ebo_address, email, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, kreditor_id, last_name, notes, open_cases, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, register_number, represented_by, risk_score, street, total_debt, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46);
+2025-11-28 10:05:16.263 +01:00 [INF] Created portal test debtor
+2025-11-28 10:05:16.333 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Decimal), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Decimal), @p7='?', @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid), @p12='?' (DbType = DateTime), @p13='?' (DbType = Decimal), @p14='?' (DbType = DateTime), @p15='?' (DbType = Boolean), @p16='?' (DbType = Decimal), @p17='?' (DbType = DateTime), @p18='?' (DbType = DateTime), @p19='?', @p20='?' (DbType = Boolean), @p21='?' (DbType = Guid), @p22='?' (DbType = DateTime), @p23='?', @p24='?' (DbType = Decimal), @p25='?' (DbType = Decimal), @p26='?', @p27='?' (DbType = DateTime), @p28='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO cases (id, additional_costs, agent_id, ai_analysis, claim_description, competent_court, costs, court_file_number, created_at, currency, date_of_origin, debtor_id, due_date, interest, interest_end_date, interest_on_costs, interest_rate, interest_start_date, invoice_date, invoice_number, is_variable_interest, kreditor_id, next_action_date, payment_allocation_notes, principal_amount, procedure_costs, status, statute_of_limitations_date, updated_at)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28);
+2025-11-28 10:05:16.334 +01:00 [INF] Created portal test case (Invoice: RE-PORTAL-TEST, ZipCode: 10115)
+2025-11-28 10:05:16.340 +01:00 [ERR] Failed executing DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Guid), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = DateTime), @p16='?' (DbType = DateTime), @p17='?' (DbType = Int32), @p18='?', @p19='?', @p20='?' (DbType = Int32), @p21='?', @p22='?', @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Boolean), @p28='?' (DbType = Guid), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?', @p34='?', @p35='?', @p36='?', @p37='?', @p38='?', @p39='?', @p40='?', @p41='?', @p42='?', @p43='?' (DbType = Decimal), @p44='?' (DbType = DateTime), @p45='?', @p46='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO debtors (id, additional_address_info, address_last_checked, address_status, agent_id, bank_bic, bank_iban, bank_name, birth_country, birth_name, birth_place, city, city_district, company_name, country, created_at, date_of_birth, door_position, ebo_address, email, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, kreditor_id, last_name, notes, open_cases, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, register_number, represented_by, risk_score, street, total_debt, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46);
+2025-11-28 10:05:16.354 +01:00 [ERR] An exception occurred in the database while saving changes for context type 'MonetarisApi.Data.ApplicationDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+2025-11-28 10:05:16.356 +01:00 [ERR] An error occurred while applying database migrations or seeding data
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at MonetarisApi.Data.DatabaseSeeder.SeedAsync() in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Data\DatabaseSeeder.cs:line 196
+   at Program.<Main>$(String[] args) in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Program.cs:line 262
+2025-11-28 10:05:16.363 +01:00 [FTL] Application terminated unexpectedly
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at MonetarisApi.Data.DatabaseSeeder.SeedAsync() in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Data\DatabaseSeeder.cs:line 196
+   at Program.<Main>$(String[] args) in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Program.cs:line 262

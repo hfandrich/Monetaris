@@ -2,6 +2,7 @@
 import { User, AuthState, UserRole } from '../types';
 import { API_ENDPOINTS } from './api/config';
 import { HttpClient } from './api/httpClient';
+import { csrfService } from './csrfService';
 
 // Backend returns numeric role values, frontend uses string enum
 const USER_ROLE_MAP: Record<number, UserRole> = {
@@ -97,9 +98,13 @@ export const authService = {
       }
     }
 
+    // Clear authentication data
     localStorage.removeItem('monetaris_token');
     localStorage.removeItem('monetaris_refresh_token');
     localStorage.removeItem('monetaris_user');
+
+    // Invalidate CSRF token
+    csrfService.invalidate();
   },
 
   checkSession: (): AuthState => {
@@ -115,5 +120,9 @@ export const authService = {
     }
 
     return { user: null, isAuthenticated: false, token: null };
+  },
+
+  getToken: (): string | null => {
+    return localStorage.getItem('monetaris_token');
   },
 };

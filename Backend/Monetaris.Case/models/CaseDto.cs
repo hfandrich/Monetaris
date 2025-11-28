@@ -8,7 +8,7 @@ namespace Monetaris.Case.Models;
 public class CaseDto
 {
     public Guid Id { get; set; }
-    public Guid TenantId { get; set; }
+    public Guid KreditorId { get; set; }
     public Guid DebtorId { get; set; }
     public Guid? AgentId { get; set; }
 
@@ -31,12 +31,25 @@ public class CaseDto
     public string? CourtFileNumber { get; set; }
     public string? AiAnalysis { get; set; }
 
+    // Claim Details
+    public DateTime? DateOfOrigin { get; set; }
+    public string? ClaimDescription { get; set; }
+    public DateTime? InterestStartDate { get; set; }
+    public decimal? InterestRate { get; set; }
+    public bool IsVariableInterest { get; set; }
+    public DateTime? InterestEndDate { get; set; }
+    public decimal AdditionalCosts { get; set; }
+    public decimal ProcedureCosts { get; set; }
+    public bool InterestOnCosts { get; set; }
+    public DateTime? StatuteOfLimitationsDate { get; set; }
+    public string? PaymentAllocationNotes { get; set; }
+
     // Timestamps
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
     // Navigation
-    public string TenantName { get; set; } = string.Empty;
+    public string KreditorName { get; set; } = string.Empty;
     public string DebtorName { get; set; } = string.Empty;
     public string? AgentName { get; set; }
 }

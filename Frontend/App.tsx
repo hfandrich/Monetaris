@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { LoginClient } from './pages/LoginClient';
 import { LoginDebtor } from './pages/LoginDebtor';
 import { Landing } from './pages/Landing';
+import { Datenschutz } from './pages/Datenschutz';
+import { Impressum } from './pages/Impressum';
+import { AGB } from './pages/AGB';
+import { PasswortVergessen } from './pages/PasswortVergessen';
 import { Dashboard } from './pages/Dashboard';
 import { Claims } from './pages/Claims';
 import { Debtors } from './pages/Debtors';
 import { DebtorDetail } from './pages/DebtorDetail';
-import { Compliance } from './pages/Compliance';
 import { Import } from './pages/Import';
 import { Clients } from './pages/Clients';
 import { ClientDetail } from './pages/ClientDetail';
@@ -20,6 +23,23 @@ import { ClientPortal } from './pages/ClientPortal';
 import { DebtorPortal } from './pages/DebtorPortal';
 import { authService } from './services/authService';
 import { User, UserRole } from './types';
+
+// Protected Route Wrapper
+const ProtectedRoute: React.FC<{ user: User | null; children: React.ReactNode }> = ({ user, children }) => {
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
+
+// Layout Wrapper for protected routes
+const ProtectedLayout: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogout }) => {
+  return (
+    <Layout user={user} onLogout={onLogout}>
+      <Outlet />
+    </Layout>
+  );
+};
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -67,6 +87,12 @@ const App: React.FC = () => {
         {/* Public Routes */}
         <Route path="/" element={user ? <Navigate to={getHomeRoute()} replace /> : <Landing />} />
 
+        {/* Legal Pages (Public) */}
+        <Route path="/datenschutz" element={<Datenschutz />} />
+        <Route path="/impressum" element={<Impressum />} />
+        <Route path="/agb" element={<AGB />} />
+        <Route path="/passwort-vergessen" element={<PasswortVergessen />} />
+
         {/* Separated Login Routes */}
         <Route
           path="/login"
@@ -87,67 +113,55 @@ const App: React.FC = () => {
           }
         />
 
-        {/* Public Payment Page (No Auth required usually, but linked here) */}
+        {/* Public Payment Page */}
         <Route path="/pay/:caseId" element={<Pay />} />
 
-        {/* Protected Routes */}
-        <Route
-          path="/*"
-          element={
-            !user ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Layout user={user} onLogout={handleLogout}>
-                <Routes>
-                  {/* Core Admin / Agent Routes */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      user.role === UserRole.DEBTOR ? (
-                        <Navigate to="/portal/debtor" />
-                      ) : (
-                        <Dashboard />
-                      )
-                    }
-                  />
-                  <Route path="/claims" element={<Claims />} />
-                  <Route path="/debtors" element={<Debtors />} />
-                  <Route path="/debtors/:id" element={<DebtorDetail />} />
-                  <Route path="/compliance" element={<Compliance />} />
-                  <Route path="/import" element={<Import />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/clients/:id" element={<ClientDetail />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/templates" element={<Templates />} />
+        {/* Protected Routes with Layout */}
+        <Route element={user ? <ProtectedLayout user={user} onLogout={handleLogout} /> : <Navigate to="/" replace />}>
+          <Route
+            path="/dashboard"
+            element={
+              user?.role === UserRole.DEBTOR ? (
+                <Navigate to="/portal/debtor" />
+              ) : (
+                <Dashboard />
+              )
+            }
+          />
+          <Route path="/claims" element={<Claims />} />
+          <Route path="/debtors" element={<Debtors />} />
+          <Route path="/debtors/:id" element={<DebtorDetail />} />
+          <Route path="/import" element={<Import />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/clients/:id" element={<ClientDetail />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/templates" element={<Templates />} />
 
-                  {/* Portal Routes */}
-                  <Route
-                    path="/portal/client"
-                    element={
-                      user.role === UserRole.CLIENT ? (
-                        <ClientPortal />
-                      ) : (
-                        <Navigate to="/dashboard" />
-                      )
-                    }
-                  />
-                  <Route
-                    path="/portal/debtor"
-                    element={
-                      user.role === UserRole.DEBTOR ? (
-                        <DebtorPortal />
-                      ) : (
-                        <Navigate to="/dashboard" />
-                      )
-                    }
-                  />
+          {/* Portal Routes */}
+          <Route
+            path="/portal/client"
+            element={
+              user?.role === UserRole.CLIENT ? (
+                <ClientPortal />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+          <Route
+            path="/portal/debtor"
+            element={
+              user?.role === UserRole.DEBTOR ? (
+                <DebtorPortal />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+        </Route>
 
-                  <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
-                </Routes>
-              </Layout>
-            )
-          }
-        />
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to={getHomeRoute()} replace />} />
       </Routes>
     </HashRouter>
   );

@@ -45,8 +45,8 @@ public class GetAllCases : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Handle([FromQuery] CaseFilterRequest filters)
     {
-        _logger.LogInformation("GetAllCases endpoint called with filters: TenantId={TenantId}, Status={Status}, Page={Page}, PageSize={PageSize}",
-            filters.TenantId, filters.Status, filters.Page, filters.PageSize);
+        _logger.LogInformation("GetAllCases endpoint called with filters: KreditorId={KreditorId}, Status={Status}, Page={Page}, PageSize={PageSize}",
+            filters.KreditorId, filters.Status, filters.Page, filters.PageSize);
 
         var currentUser = await GetCurrentUserAsync();
         if (currentUser == null)

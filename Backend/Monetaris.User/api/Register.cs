@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Monetaris.User.Services;
 using Monetaris.User.Models;
@@ -30,8 +31,10 @@ public class Register : ControllerBase
     /// <response code="200">Registration successful - returns access token, refresh token, and user details</response>
     /// <response code="400">Email already exists, invalid tenant, or validation error</response>
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
     {
         _logger.LogInformation("Registration attempt for email: {Email}", request.Email);

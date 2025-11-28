@@ -35,7 +35,7 @@ public class CreateCase : ControllerBase
 
     /// <summary>
     /// Create a new collection case (starts in NEW status)
-    /// Validates debtor exists, user has access to tenant, and invoice number is unique
+    /// Validates debtor exists, user has access to kreditor, and invoice number is unique
     /// </summary>
     /// <param name="request">Case creation data</param>
     /// <returns>Created case with full details</returns>
@@ -46,8 +46,8 @@ public class CreateCase : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Handle([FromBody] CreateCaseRequest request)
     {
-        _logger.LogInformation("CreateCase endpoint called by user for tenant {TenantId}, debtor {DebtorId}, invoice {InvoiceNumber}",
-            request.TenantId, request.DebtorId, request.InvoiceNumber);
+        _logger.LogInformation("CreateCase endpoint called by user for kreditor {KreditorId}, debtor {DebtorId}, invoice {InvoiceNumber}",
+            request.KreditorId, request.DebtorId, request.InvoiceNumber);
 
         var currentUser = await GetCurrentUserAsync();
         if (currentUser == null)

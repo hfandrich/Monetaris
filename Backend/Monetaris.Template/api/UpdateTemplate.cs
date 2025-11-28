@@ -12,11 +12,11 @@ using System.Security.Claims;
 namespace Monetaris.Template.Api;
 
 /// <summary>
-/// PUT endpoint to update an existing template (ADMIN only)
+/// PUT endpoint to update an existing template (ADMIN and AGENT)
 /// </summary>
 [ApiController]
 [Route("api/templates")]
-[Authorize(Roles = "ADMIN")]
+[Authorize(Roles = "ADMIN,AGENT")]
 public class UpdateTemplate : ControllerBase
 {
     private readonly ITemplateService _service;

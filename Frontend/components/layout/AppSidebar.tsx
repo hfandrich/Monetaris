@@ -8,7 +8,6 @@ import {
   UploadCloud,
   FileText,
   Users,
-  ShieldCheck,
   Building2,
   Settings,
   FileCode,
@@ -65,12 +64,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       name: 'Vorlagen',
       href: '/templates',
       icon: FileCode,
-      role: [UserRole.ADMIN, UserRole.AGENT],
-    },
-    {
-      name: 'Compliance',
-      href: '/compliance',
-      icon: ShieldCheck,
       role: [UserRole.ADMIN, UserRole.AGENT],
     },
     { name: 'Mandanten', href: '/clients', icon: Building2, role: [UserRole.ADMIN] },
@@ -175,11 +168,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 {user?.name}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate opacity-80">
-                {user?.role?.toLowerCase() === 'agent'
+                {user?.role === UserRole.AGENT || user?.role === 1
                   ? 'Agent'
-                  : user?.role?.toLowerCase() === 'client'
+                  : user?.role === UserRole.CLIENT || user?.role === 2
                     ? 'Mandant'
-                    : user?.role === UserRole.DEBTOR
+                    : user?.role === UserRole.DEBTOR || user?.role === 3
                       ? 'Gast'
                       : 'Admin'}
               </p>

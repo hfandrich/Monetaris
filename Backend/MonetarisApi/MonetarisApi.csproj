@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
@@ -25,7 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Monetaris.Shared\Monetaris.Shared.csproj" />
-    <ProjectReference Include="..\Monetaris.Tenant\Monetaris.Tenant.csproj" />
     <ProjectReference Include="..\Monetaris.Kreditor\Monetaris.Kreditor.csproj" />
     <ProjectReference Include="..\Monetaris.User\Monetaris.User.csproj" />
     <ProjectReference Include="..\Monetaris.Debtor\Monetaris.Debtor.csproj" />

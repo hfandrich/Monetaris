@@ -1,5 +1,6 @@
 using FluentValidation;
 using Monetaris.Debtor.Models;
+using Monetaris.Shared.Enums;
 
 namespace Monetaris.Debtor.Validators;
 
@@ -10,23 +11,25 @@ public class UpdateDebtorRequestValidator : AbstractValidator<UpdateDebtorReques
 {
     public UpdateDebtorRequestValidator()
     {
-        // Company validation
-        When(x => x.IsCompany, () =>
+        // Company/Legal Entity validation
+        When(x => x.EntityType == EntityType.LEGAL_ENTITY || x.EntityType == EntityType.PARTNERSHIP, () =>
         {
             RuleFor(x => x.CompanyName)
-                .NotEmpty().WithMessage("Company name is required for companies")
+                .NotEmpty().WithMessage("Company name is required for legal entities and partnerships")
                 .MaximumLength(200).WithMessage("Company name must not exceed 200 characters");
         });
 
-        // Person validation
-        When(x => !x.IsCompany, () =>
+        // Natural Person validation
+        When(x => x.EntityType == EntityType.NATURAL_PERSON, () =>
         {
             RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage("First name is required for individuals")
+                .NotEmpty().When(x => string.IsNullOrEmpty(x.LastName))
+                .WithMessage("First name or last name is required for natural persons")
                 .MaximumLength(100).WithMessage("First name must not exceed 100 characters");
 
             RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage("Last name is required for individuals")
+                .NotEmpty().When(x => string.IsNullOrEmpty(x.FirstName))
+                .WithMessage("Last name or first name is required for natural persons")
                 .MaximumLength(100).WithMessage("Last name must not exceed 100 characters");
         });
 

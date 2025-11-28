@@ -5,7 +5,8 @@
  */
 
 import { CollectionCase, Debtor, Tenant, User, Inquiry, Document, CommunicationTemplate } from '../types';
-import { SEED_CASES, SEED_DEBTORS, SEED_TENANTS, SEED_INQUIRIES, SEED_DOCUMENTS, SEED_USERS, SEED_TEMPLATES } from './mockData';
+import { SEED_CASES, SEED_DEBTORS, SEED_KREDITOREN, SEED_INQUIRIES, SEED_DOCUMENTS, SEED_USERS, SEED_TEMPLATES } from './mockData';
+import { logger } from '../utils/logger';
 
 /**
  * DATABASE CONFIGURATION
@@ -20,7 +21,7 @@ const DB_KEY = 'monetaris_enterprise_db_v2';
 interface DatabaseSchema {
     cases: CollectionCase[];
     debtors: Debtor[];
-    tenants: Tenant[];
+    tenants: Kreditor[];
     users: User[];
     inquiries: Inquiry[];
     documents: Document[];
@@ -34,17 +35,17 @@ class Database {
     constructor() {
         // 1. Try to load existing data from persistence
         const stored = localStorage.getItem(DB_KEY);
-        
+
         if (stored) {
-            console.log('[Database] Connection established. Loading persistent data.');
+            logger.log('[Database] Connection established. Loading persistent data.');
             this.data = JSON.parse(stored);
         } else {
-            console.log('[Database] No existing data found. Seeding initial mock data.');
+            logger.log('[Database] No existing data found. Seeding initial mock data.');
             // 2. If empty, SEED with Mock Data
             this.data = {
                 cases: SEED_CASES,
                 debtors: SEED_DEBTORS,
-                tenants: SEED_TENANTS,
+                tenants: SEED_KREDITOREN,
                 users: SEED_USERS,
                 inquiries: SEED_INQUIRIES,
                 documents: SEED_DOCUMENTS,
@@ -61,7 +62,7 @@ class Database {
         try {
             localStorage.setItem(DB_KEY, JSON.stringify(this.data));
         } catch (e) {
-            console.error('[Database] Write Error (Quota Exceeded?):', e);
+            logger.error('[Database] Write Error (Quota Exceeded?):', e);
         }
     }
 

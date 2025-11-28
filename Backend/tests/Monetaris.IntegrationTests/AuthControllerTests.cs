@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Monetaris.IntegrationTests.Infrastructure;
-using Monetaris.User.DTOs;
+using Monetaris.User.Models;
 
 namespace Monetaris.IntegrationTests;
 

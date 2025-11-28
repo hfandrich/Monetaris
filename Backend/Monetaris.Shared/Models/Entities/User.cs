@@ -28,9 +28,9 @@ public class User : BaseEntity
     public UserRole Role { get; set; }
 
     /// <summary>
-    /// Primary tenant ID (for CLIENT role)
+    /// Primary kreditor ID (for CLIENT role)
     /// </summary>
-    public Guid? TenantId { get; set; }
+    public Guid? KreditorId { get; set; }
 
     /// <summary>
     /// Avatar initials for display
@@ -44,14 +44,14 @@ public class User : BaseEntity
 
     // Navigation Properties
     /// <summary>
-    /// Primary tenant (for CLIENT users)
+    /// Primary kreditor (for CLIENT users)
     /// </summary>
-    public Tenant? Tenant { get; set; }
+    public Kreditor? Kreditor { get; set; }
 
     /// <summary>
-    /// Tenant assignments (for AGENT users who can handle multiple tenants)
+    /// Kreditor assignments (for AGENT users who can handle multiple kreditoren)
     /// </summary>
-    public ICollection<UserTenantAssignment> TenantAssignments { get; set; } = new List<UserTenantAssignment>();
+    public ICollection<UserKreditorAssignment> KreditorAssignments { get; set; } = new List<UserKreditorAssignment>();
 
     /// <summary>
     /// Refresh tokens for JWT authentication

@@ -453,9 +453,9 @@ export const Landing: React.FC = () => {
                <span>© 2024 Monetaris Inc.</span>
             </div>
             <div className="flex gap-8 font-medium">
-               <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Datenschutz</a>
-               <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Impressum</a>
-               <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">AGB</a>
+               <a href="#/datenschutz" className="hover:text-slate-900 dark:hover:text-white transition-colors">Datenschutz</a>
+               <a href="#/impressum" className="hover:text-slate-900 dark:hover:text-white transition-colors">Impressum</a>
+               <a href="#/agb" className="hover:text-slate-900 dark:hover:text-white transition-colors">AGB</a>
             </div>
          </div>
       </footer>

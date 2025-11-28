@@ -18,4 +18,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Monetaris.Shared\Monetaris.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

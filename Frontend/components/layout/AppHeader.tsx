@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppNotification, SearchResult } from '../../types';
-import { dataService } from '../../services/dataService';
+import { dashboardApi } from '../../services/api/apiClient';
 import { authService } from '../../services/authService';
 import { FileText, Users, Building2 } from 'lucide-react';
 
@@ -73,11 +73,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
   useEffect(() => {
     if (searchQuery.length >= 2) {
       const timer = setTimeout(async () => {
-        const { user } = authService.checkSession();
-        // Pass user context to searchGlobal for scoping
-        const results = await dataService.searchGlobal(searchQuery, user || undefined);
-        setSearchResults(results);
-        setShowSearch(true);
+        try {
+          // Use dashboard API for search
+          const results = await dashboardApi.search(searchQuery);
+          setSearchResults(results || []);
+          setShowSearch(true);
+        } catch (err) {
+          console.error('Search error:', err);
+          setSearchResults([]);
+          setShowSearch(true);
+        }
       }, 300);
       return () => clearTimeout(timer);
     } else {

@@ -8,9 +8,9 @@ namespace Monetaris.Shared.Models.Entities;
 public class Case : BaseEntity
 {
     /// <summary>
-    /// Tenant (creditor) this case belongs to
+    /// Kreditor (creditor) this case belongs to
     /// </summary>
-    public Guid TenantId { get; set; }
+    public Guid KreditorId { get; set; }
 
     /// <summary>
     /// Debtor this case is against
@@ -86,6 +86,62 @@ public class Case : BaseEntity
     /// </summary>
     public string? AiAnalysis { get; set; }
 
+    // Claim Details (Forderung)
+    /// <summary>
+    /// Date when claim originated (Tag der Entstehung)
+    /// </summary>
+    public DateTime? DateOfOrigin { get; set; }
+
+    /// <summary>
+    /// Exact description for statute of limitations (Exakte Beschreibung)
+    /// </summary>
+    public string? ClaimDescription { get; set; }
+
+    /// <summary>
+    /// Interest start date (Zinslauf Beginn)
+    /// </summary>
+    public DateTime? InterestStartDate { get; set; }
+
+    /// <summary>
+    /// Interest rate percentage (Zinshöhe)
+    /// </summary>
+    public decimal? InterestRate { get; set; }
+
+    /// <summary>
+    /// Is variable interest rate tied to base rate (Basiszins gekoppelt)
+    /// </summary>
+    public bool IsVariableInterest { get; set; } = false;
+
+    /// <summary>
+    /// Interest end date (Zinsende)
+    /// </summary>
+    public DateTime? InterestEndDate { get; set; }
+
+    /// <summary>
+    /// Additional costs (Nebenkosten)
+    /// </summary>
+    public decimal AdditionalCosts { get; set; }
+
+    /// <summary>
+    /// Procedure costs (Verfahrenskosten)
+    /// </summary>
+    public decimal ProcedureCosts { get; set; }
+
+    /// <summary>
+    /// Interest accrues on costs (Zinslauf Verfahrenskosten)
+    /// </summary>
+    public bool InterestOnCosts { get; set; } = false;
+
+    /// <summary>
+    /// Statute of limitations date (Verjährungsfrist)
+    /// </summary>
+    public DateTime? StatuteOfLimitationsDate { get; set; }
+
+    /// <summary>
+    /// Payment allocation notes per §§ 366, 367 BGB
+    /// </summary>
+    public string? PaymentAllocationNotes { get; set; }
+
     // Computed Properties
     /// <summary>
     /// Total amount (sum of principal, costs, and interest)
@@ -94,9 +150,9 @@ public class Case : BaseEntity
 
     // Navigation Properties
     /// <summary>
-    /// The tenant (creditor) this case belongs to
+    /// The kreditor (creditor) this case belongs to
     /// </summary>
-    public Tenant Tenant { get; set; } = null!;
+    public Kreditor Kreditor { get; set; } = null!;
 
     /// <summary>
     /// The debtor this case is against

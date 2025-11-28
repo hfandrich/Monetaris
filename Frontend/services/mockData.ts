@@ -20,7 +20,7 @@ const cities = ["Berlin", "München", "Hamburg", "Köln", "Frankfurt", "Stuttgar
 const streets = ["Hauptstraße", "Bahnhofstraße", "Lindenallee", "Industriestraße", "Gartenweg", "Marktplatz", "Schulstraße", "Dorfstraße", "Bergstraße", "Waldweg"];
 
 // --- Seed Tenants ---
-export const SEED_TENANTS: Tenant[] = [
+export const SEED_KREDITOREN: Kreditor[] = [
   { id: 't1', name: 'TechSolutions GmbH', registrationNumber: 'HRB-12345', contactEmail: 'finance@techsolutions.de', bankAccountIBAN: 'DE45 1000 0000 1234 5678 90' },
   { id: 't2', name: 'MediCare Praxisverbund', registrationNumber: 'HRB-98765', contactEmail: 'abrechnung@medicare.de', bankAccountIBAN: 'DE89 5000 0000 9876 5432 10' },
   { id: 't3', name: 'GreenEnergy e.G.', registrationNumber: 'GnR-5521', contactEmail: 'buchhaltung@greenenergy.de', bankAccountIBAN: 'DE12 3456 7890 1234 5678 99' },
@@ -99,7 +99,7 @@ for(let k=0; k < portalCasesCount; k++) {
     const principal = randomInt(50, 1200);
     const costs = 25.00;
     const interest = 12.50;
-    const tenant = randomItem(SEED_TENANTS);
+    const tenant = randomItem(SEED_KREDITOREN);
     
     SEED_CASES.push({
         id: `c-portal-${k}`,
@@ -131,7 +131,7 @@ for(let k=0; k < portalCasesCount; k++) {
 // Generate 150 Random Debtors
 for (let i = 0; i < 150; i++) {
   const isCompany = Math.random() > 0.7;
-  const tenant = randomItem(SEED_TENANTS); // Random tenant origin
+  const tenant = randomItem(SEED_KREDITOREN); // Random tenant origin
   
   // Explicitly distribute ownership: 
   // 'u0' (Admin) gets 20%
@@ -194,7 +194,7 @@ const statusDistribution = [
 
 for (let i = 0; i < 400; i++) {
   const debtor = SEED_DEBTORS[randomInt(1, SEED_DEBTORS.length - 1)]; // Skip first debtor (manual)
-  const tenant = SEED_TENANTS.find(t => t.id === debtor.tenantId) || SEED_TENANTS[0];
+  const tenant = SEED_KREDITOREN.find(t => t.id === debtor.tenantId) || SEED_KREDITOREN[0];
   const status = randomItem(statusDistribution);
   
   const principal = randomInt(80, 5000);
@@ -295,7 +295,7 @@ export const SEED_TEMPLATES: CommunicationTemplate[] = [
     <p>Sollten Sie die Zahlung bereits geleistet haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.</p>
     <br>
     <p>Mit freundlichen Grüßen,</p>
-    <p>{{tenant.name}}</p>`,
+    <p>{{kreditor.name}}</p>`,
     lastModified: new Date().toISOString()
   },
   {
@@ -311,7 +311,7 @@ export const SEED_TEMPLATES: CommunicationTemplate[] = [
     <p>Fälligkeitsdatum: <strong>{{case.dueDate}}</strong></p>
     <br>
     <p>Hochachtungsvoll,</p>
-    <p>{{tenant.name}} Buchhaltung</p>`,
+    <p>{{kreditor.name}} Buchhaltung</p>`,
     lastModified: new Date().toISOString()
   },
   {
@@ -327,7 +327,7 @@ export const SEED_TEMPLATES: CommunicationTemplate[] = [
     <p>Zahlen Sie bis spätestens <strong>{{case.dueDate}}</strong>. Andernfalls werden wir die Forderung an unsere Rechtsanwälte zur gerichtlichen Betreibung übergeben. Die hierdurch entstehenden erheblichen Mehrkosten gehen zu Ihren Lasten.</p>
     <br>
     <p>Mit freundlichen Grüßen,</p>
-    <p>{{tenant.name}} - Rechtsabteilung</p>`,
+    <p>{{kreditor.name}} - Rechtsabteilung</p>`,
     lastModified: new Date().toISOString()
   },
   {
@@ -336,7 +336,7 @@ export const SEED_TEMPLATES: CommunicationTemplate[] = [
     type: 'LETTER',
     category: 'GENERAL',
     content: `<h2>Ratenzahlungsvereinbarung</h2>
-    <p>zwischen {{tenant.name}} (Gläubiger) und {{debtor.firstName}} {{debtor.lastName}} (Schuldner).</p>
+    <p>zwischen {{kreditor.name}} (Gläubiger) und {{debtor.firstName}} {{debtor.lastName}} (Schuldner).</p>
     <p>Der Schuldner erkennt die Forderung in Höhe von {{case.totalAmount}} vollumfänglich an.</p>
     <p>Zur Tilgung wird eine monatliche Rate von 50,00 EUR vereinbart, zahlbar zum 1. eines jeden Monats.</p>
     <p>Bei Verzug mit einer Rate wird der gesamte Restbetrag sofort fällig.</p>

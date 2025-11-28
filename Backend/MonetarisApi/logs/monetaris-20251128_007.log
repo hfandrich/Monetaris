@@ -1,0 +1,653 @@
+2025-11-28 10:00:49.189 +01:00 [INF] Starting Monetaris API
+2025-11-28 10:00:49.693 +01:00 [INF] Applying database migrations...
+2025-11-28 10:00:50.565 +01:00 [ERR] An error occurred using the connection to database 'monetaris' on server 'tcp://localhost:5435'.
+2025-11-28 10:00:50.883 +01:00 [INF] Executed DbCommand (232ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE DATABASE monetaris;
+2025-11-28 10:00:51.036 +01:00 [INF] Executed DbCommand (15ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    migration_id character varying(150) NOT NULL,
+    product_version character varying(32) NOT NULL,
+    CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
+);
+2025-11-28 10:00:51.046 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-28 10:00:51.049 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2025-11-28 10:00:51.054 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:00:51.066 +01:00 [INF] Applying migration '20251127084110_InitialCreate'.
+2025-11-28 10:00:51.114 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE tenants (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    registration_number text NOT NULL,
+    contact_email text NOT NULL,
+    bank_account_iban text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_tenants PRIMARY KEY (id)
+);
+2025-11-28 10:00:51.124 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE templates (
+    id uuid NOT NULL,
+    tenant_id uuid,
+    name text NOT NULL,
+    type text NOT NULL,
+    category text NOT NULL,
+    subject text,
+    content text NOT NULL,
+    last_modified timestamp with time zone NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_templates PRIMARY KEY (id),
+    CONSTRAINT fk_templates_tenants_tenant_id FOREIGN KEY (tenant_id) REFERENCES tenants (id)
+);
+2025-11-28 10:00:51.133 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE users (
+    id uuid NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    role text NOT NULL,
+    tenant_id uuid,
+    avatar_initials text,
+    is_active boolean NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_users PRIMARY KEY (id),
+    CONSTRAINT fk_users_tenants_tenant_id FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE
+);
+2025-11-28 10:00:51.143 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE debtors (
+    id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    agent_id uuid,
+    is_company boolean NOT NULL,
+    company_name text,
+    first_name text,
+    last_name text,
+    email text,
+    phone text,
+    date_of_birth timestamp with time zone,
+    street text,
+    zip_code text,
+    city text,
+    country text NOT NULL,
+    address_status text NOT NULL,
+    address_last_checked timestamp with time zone,
+    risk_score text NOT NULL,
+    total_debt numeric(15,2) NOT NULL,
+    open_cases integer NOT NULL,
+    notes text,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_debtors PRIMARY KEY (id),
+    CONSTRAINT fk_debtors_tenants_tenant_id FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_debtors_users_agent_id FOREIGN KEY (agent_id) REFERENCES users (id) ON DELETE SET NULL
+);
+2025-11-28 10:00:51.154 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE refresh_tokens (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    token text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    revoked_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_refresh_tokens PRIMARY KEY (id),
+    CONSTRAINT fk_refresh_tokens_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+2025-11-28 10:00:51.161 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE user_tenant_assignments (
+    user_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_user_tenant_assignments PRIMARY KEY (user_id, tenant_id),
+    CONSTRAINT fk_user_tenant_assignments_tenants_tenant_id FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE,
+    CONSTRAINT fk_user_tenant_assignments_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+2025-11-28 10:00:51.171 +01:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE cases (
+    id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    debtor_id uuid NOT NULL,
+    agent_id uuid,
+    principal_amount numeric(15,2) NOT NULL,
+    costs numeric(15,2) NOT NULL,
+    interest numeric(15,2) NOT NULL,
+    currency text NOT NULL,
+    invoice_number text NOT NULL,
+    invoice_date timestamp with time zone NOT NULL,
+    due_date timestamp with time zone NOT NULL,
+    status text NOT NULL,
+    next_action_date timestamp with time zone,
+    competent_court text NOT NULL,
+    court_file_number text,
+    ai_analysis text,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_cases PRIMARY KEY (id),
+    CONSTRAINT fk_cases_debtors_debtor_id FOREIGN KEY (debtor_id) REFERENCES debtors (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_cases_tenants_tenant_id FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_cases_users_agent_id FOREIGN KEY (agent_id) REFERENCES users (id) ON DELETE SET NULL
+);
+2025-11-28 10:00:51.179 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE documents (
+    id uuid NOT NULL,
+    debtor_id uuid NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    size_bytes bigint NOT NULL,
+    file_path text NOT NULL,
+    preview_url text,
+    uploaded_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_documents PRIMARY KEY (id),
+    CONSTRAINT fk_documents_debtors_debtor_id FOREIGN KEY (debtor_id) REFERENCES debtors (id) ON DELETE CASCADE
+);
+2025-11-28 10:00:51.187 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE case_history (
+    id uuid NOT NULL,
+    case_id uuid NOT NULL,
+    action text NOT NULL,
+    details text NOT NULL,
+    actor text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_case_history PRIMARY KEY (id),
+    CONSTRAINT fk_case_history_cases_case_id FOREIGN KEY (case_id) REFERENCES cases (id) ON DELETE CASCADE
+);
+2025-11-28 10:00:51.196 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE inquiries (
+    id uuid NOT NULL,
+    case_id uuid NOT NULL,
+    question text NOT NULL,
+    answer text,
+    status text NOT NULL,
+    created_by uuid NOT NULL,
+    resolved_at timestamp with time zone,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT pk_inquiries PRIMARY KEY (id),
+    CONSTRAINT fk_inquiries_cases_case_id FOREIGN KEY (case_id) REFERENCES cases (id) ON DELETE CASCADE,
+    CONSTRAINT fk_inquiries_users_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE RESTRICT
+);
+2025-11-28 10:00:51.202 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_case_history_case_id ON case_history (case_id);
+2025-11-28 10:00:51.209 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_case_history_created_at ON case_history (created_at);
+2025-11-28 10:00:51.213 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_agent_id ON cases (agent_id);
+2025-11-28 10:00:51.217 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_debtor_id ON cases (debtor_id);
+2025-11-28 10:00:51.223 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_due_date ON cases (due_date);
+2025-11-28 10:00:51.227 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_invoice_number ON cases (invoice_number);
+2025-11-28 10:00:51.231 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_next_action_date ON cases (next_action_date);
+2025-11-28 10:00:51.237 +01:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_status ON cases (status);
+2025-11-28 10:00:51.242 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_cases_tenant_id ON cases (tenant_id);
+2025-11-28 10:00:51.246 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_debtors_agent_id ON debtors (agent_id);
+2025-11-28 10:00:51.249 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_debtors_email ON debtors (email);
+2025-11-28 10:00:51.253 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_debtors_risk_score ON debtors (risk_score);
+2025-11-28 10:00:51.258 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_debtors_tenant_id ON debtors (tenant_id);
+2025-11-28 10:00:51.262 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_documents_debtor_id ON documents (debtor_id);
+2025-11-28 10:00:51.266 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_documents_uploaded_at ON documents (uploaded_at);
+2025-11-28 10:00:51.270 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_inquiries_case_id ON inquiries (case_id);
+2025-11-28 10:00:51.273 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_inquiries_created_by ON inquiries (created_by);
+2025-11-28 10:00:51.277 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_inquiries_status ON inquiries (status);
+2025-11-28 10:00:51.281 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_refresh_tokens_expires_at ON refresh_tokens (expires_at);
+2025-11-28 10:00:51.285 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX ix_refresh_tokens_token ON refresh_tokens (token);
+2025-11-28 10:00:51.289 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens (user_id);
+2025-11-28 10:00:51.293 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_templates_category ON templates (category);
+2025-11-28 10:00:51.297 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_templates_tenant_id ON templates (tenant_id);
+2025-11-28 10:00:51.301 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_templates_type ON templates (type);
+2025-11-28 10:00:51.305 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_tenants_contact_email ON tenants (contact_email);
+2025-11-28 10:00:51.310 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX ix_tenants_registration_number ON tenants (registration_number);
+2025-11-28 10:00:51.316 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_user_tenant_assignments_tenant_id ON user_tenant_assignments (tenant_id);
+2025-11-28 10:00:51.322 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_user_tenant_assignments_user_id ON user_tenant_assignments (user_id);
+2025-11-28 10:00:51.329 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX ix_users_email ON users (email);
+2025-11-28 10:00:51.336 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_users_role ON users (role);
+2025-11-28 10:00:51.343 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX ix_users_tenant_id ON users (tenant_id);
+2025-11-28 10:00:51.346 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20251127084110_InitialCreate', '9.0.0');
+2025-11-28 10:00:51.347 +01:00 [INF] Applying migration '20251127111111_RenameTenantToKreditor'.
+2025-11-28 10:00:51.373 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases DROP CONSTRAINT fk_cases_tenants_tenant_id;
+2025-11-28 10:00:51.376 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors DROP CONSTRAINT fk_debtors_tenants_tenant_id;
+2025-11-28 10:00:51.380 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE templates DROP CONSTRAINT fk_templates_tenants_tenant_id;
+2025-11-28 10:00:51.382 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE users DROP CONSTRAINT fk_users_tenants_tenant_id;
+2025-11-28 10:00:51.385 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_tenant_assignments DROP CONSTRAINT fk_user_tenant_assignments_tenants_tenant_id;
+2025-11-28 10:00:51.389 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_tenant_assignments DROP CONSTRAINT fk_user_tenant_assignments_users_user_id;
+2025-11-28 10:00:51.391 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE tenants RENAME TO kreditoren;
+2025-11-28 10:00:51.393 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_tenant_assignments RENAME TO user_kreditor_assignments;
+2025-11-28 10:00:51.396 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_kreditor_assignments RENAME COLUMN tenant_id TO kreditor_id;
+2025-11-28 10:00:51.398 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE users RENAME COLUMN tenant_id TO kreditor_id;
+2025-11-28 10:00:51.400 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE templates RENAME COLUMN tenant_id TO kreditor_id;
+2025-11-28 10:00:51.402 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors RENAME COLUMN tenant_id TO kreditor_id;
+2025-11-28 10:00:51.404 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases RENAME COLUMN tenant_id TO kreditor_id;
+2025-11-28 10:00:51.406 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_users_tenant_id RENAME TO ix_users_kreditor_id;
+2025-11-28 10:00:51.408 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_templates_tenant_id RENAME TO ix_templates_kreditor_id;
+2025-11-28 10:00:51.409 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_debtors_tenant_id RENAME TO ix_debtors_kreditor_id;
+2025-11-28 10:00:51.411 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_cases_tenant_id RENAME TO ix_cases_kreditor_id;
+2025-11-28 10:00:51.413 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_tenants_contact_email RENAME TO ix_kreditoren_contact_email;
+2025-11-28 10:00:51.414 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_tenants_registration_number RENAME TO ix_kreditoren_registration_number;
+2025-11-28 10:00:51.415 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_user_tenant_assignments_tenant_id RENAME TO ix_user_kreditor_assignments_kreditor_id;
+2025-11-28 10:00:51.416 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER INDEX ix_user_tenant_assignments_user_id RENAME TO ix_user_kreditor_assignments_user_id;
+2025-11-28 10:00:51.420 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD CONSTRAINT fk_cases_kreditoren_kreditor_id FOREIGN KEY (kreditor_id) REFERENCES kreditoren (id) ON DELETE RESTRICT;
+2025-11-28 10:00:51.423 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD CONSTRAINT fk_debtors_kreditoren_kreditor_id FOREIGN KEY (kreditor_id) REFERENCES kreditoren (id) ON DELETE RESTRICT;
+2025-11-28 10:00:51.425 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE templates ADD CONSTRAINT fk_templates_kreditoren_kreditor_id FOREIGN KEY (kreditor_id) REFERENCES kreditoren (id);
+2025-11-28 10:00:51.427 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE users ADD CONSTRAINT fk_users_kreditoren_kreditor_id FOREIGN KEY (kreditor_id) REFERENCES kreditoren (id) ON DELETE CASCADE;
+2025-11-28 10:00:51.430 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_kreditor_assignments ADD CONSTRAINT fk_user_kreditor_assignments_kreditoren_kreditor_id FOREIGN KEY (kreditor_id) REFERENCES kreditoren (id) ON DELETE CASCADE;
+2025-11-28 10:00:51.432 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE user_kreditor_assignments ADD CONSTRAINT fk_user_kreditor_assignments_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
+2025-11-28 10:00:51.433 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20251127111111_RenameTenantToKreditor', '9.0.0');
+2025-11-28 10:00:51.433 +01:00 [INF] Applying migration '20251128075247_AddInkassoFields'.
+2025-11-28 10:00:51.467 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors RENAME COLUMN phone TO vat_id;
+2025-11-28 10:00:51.468 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors RENAME COLUMN is_company TO is_deceased;
+2025-11-28 10:00:51.470 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD additional_address_info text;
+2025-11-28 10:00:51.472 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD bank_bic text;
+2025-11-28 10:00:51.473 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD bank_name text;
+2025-11-28 10:00:51.475 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD birth_country text;
+2025-11-28 10:00:51.476 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD birth_name text;
+2025-11-28 10:00:51.477 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD birth_place text;
+2025-11-28 10:00:51.479 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD city text;
+2025-11-28 10:00:51.480 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD city_district text;
+2025-11-28 10:00:51.483 +01:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD country text NOT NULL DEFAULT '';
+2025-11-28 10:00:51.484 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD date_of_birth timestamp with time zone;
+2025-11-28 10:00:51.486 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD door_position integer;
+2025-11-28 10:00:51.488 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD ebo_address text;
+2025-11-28 10:00:51.490 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD entity_type integer NOT NULL DEFAULT 0;
+2025-11-28 10:00:51.492 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD fax text;
+2025-11-28 10:00:51.493 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD file_reference text;
+2025-11-28 10:00:51.494 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD first_name text;
+2025-11-28 10:00:51.495 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD floor text;
+2025-11-28 10:00:51.496 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD gender integer;
+2025-11-28 10:00:51.497 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD house_number text;
+2025-11-28 10:00:51.498 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD is_deceased boolean NOT NULL DEFAULT FALSE;
+2025-11-28 10:00:51.500 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD last_name text;
+2025-11-28 10:00:51.501 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD partners text;
+2025-11-28 10:00:51.502 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD phone_landline text;
+2025-11-28 10:00:51.503 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD phone_mobile text;
+2025-11-28 10:00:51.505 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD place_of_death text;
+2025-11-28 10:00:51.506 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD po_box text;
+2025-11-28 10:00:51.507 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD po_box_zip_code text;
+2025-11-28 10:00:51.509 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD register_court text;
+2025-11-28 10:00:51.510 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD represented_by text;
+2025-11-28 10:00:51.511 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD street text;
+2025-11-28 10:00:51.512 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD vat_id text;
+2025-11-28 10:00:51.513 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE kreditoren ADD zip_code text;
+2025-11-28 10:00:51.514 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD additional_address_info text;
+2025-11-28 10:00:51.515 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD bank_bic text;
+2025-11-28 10:00:51.516 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD bank_iban text;
+2025-11-28 10:00:51.518 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD bank_name text;
+2025-11-28 10:00:51.519 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD birth_country text;
+2025-11-28 10:00:51.521 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD birth_name text;
+2025-11-28 10:00:51.522 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD birth_place text;
+2025-11-28 10:00:51.523 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD city_district text;
+2025-11-28 10:00:51.525 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD door_position integer;
+2025-11-28 10:00:51.526 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD ebo_address text;
+2025-11-28 10:00:51.528 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD entity_type integer NOT NULL DEFAULT 0;
+2025-11-28 10:00:51.529 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD fax text;
+2025-11-28 10:00:51.530 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD file_reference text;
+2025-11-28 10:00:51.531 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD floor text;
+2025-11-28 10:00:51.533 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD gender integer;
+2025-11-28 10:00:51.534 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD house_number text;
+2025-11-28 10:00:51.535 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD partners text;
+2025-11-28 10:00:51.536 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD phone_landline text;
+2025-11-28 10:00:51.537 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD phone_mobile text;
+2025-11-28 10:00:51.540 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD place_of_death text;
+2025-11-28 10:00:51.541 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD po_box text;
+2025-11-28 10:00:51.542 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD po_box_zip_code text;
+2025-11-28 10:00:51.544 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD register_court text;
+2025-11-28 10:00:51.545 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD register_number text;
+2025-11-28 10:00:51.546 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE debtors ADD represented_by text;
+2025-11-28 10:00:51.547 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD additional_costs numeric NOT NULL DEFAULT 0.0;
+2025-11-28 10:00:51.548 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD claim_description text;
+2025-11-28 10:00:51.550 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD date_of_origin timestamp with time zone;
+2025-11-28 10:00:51.551 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD interest_end_date timestamp with time zone;
+2025-11-28 10:00:51.553 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD interest_on_costs boolean NOT NULL DEFAULT FALSE;
+2025-11-28 10:00:51.554 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD interest_rate numeric;
+2025-11-28 10:00:51.555 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD interest_start_date timestamp with time zone;
+2025-11-28 10:00:51.556 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD is_variable_interest boolean NOT NULL DEFAULT FALSE;
+2025-11-28 10:00:51.558 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD payment_allocation_notes text;
+2025-11-28 10:00:51.559 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD procedure_costs numeric NOT NULL DEFAULT 0.0;
+2025-11-28 10:00:51.560 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE cases ADD statute_of_limitations_date timestamp with time zone;
+2025-11-28 10:00:51.561 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+VALUES ('20251128075247_AddInkassoFields', '9.0.0');
+2025-11-28 10:00:51.573 +01:00 [INF] Database migrations applied successfully
+2025-11-28 10:00:51.810 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM kreditoren AS k)
+2025-11-28 10:00:51.847 +01:00 [WRN] ==========================================================
+2025-11-28 10:00:51.847 +01:00 [WRN] STARTING DATABASE SEEDING WITH TEST DATA
+2025-11-28 10:00:51.847 +01:00 [WRN] SECURITY: Using fixed test passwords for E2E testing
+2025-11-28 10:00:51.847 +01:00 [WRN] ==========================================================
+2025-11-28 10:00:51.847 +01:00 [INF] Starting database seeding...
+2025-11-28 10:00:52.111 +01:00 [INF] Executed DbCommand (11ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?', @p4='?', @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?' (DbType = DateTime), @p13='?' (DbType = DateTime), @p14='?' (DbType = Int32), @p15='?', @p16='?' (DbType = Int32), @p17='?', @p18='?', @p19='?', @p20='?', @p21='?' (DbType = Int32), @p22='?', @p23='?' (DbType = Boolean), @p24='?', @p25='?', @p26='?', @p27='?', @p28='?', @p29='?', @p30='?', @p31='?', @p32='?', @p33='?', @p34='?', @p35='?', @p36='?' (DbType = DateTime), @p37='?', @p38='?', @p39='?' (DbType = Guid), @p40='?', @p41='?', @p42='?', @p43='?', @p44='?', @p45='?', @p46='?', @p47='?', @p48='?', @p49='?', @p50='?', @p51='?' (DbType = DateTime), @p52='?' (DbType = DateTime), @p53='?' (DbType = Int32), @p54='?', @p55='?' (DbType = Int32), @p56='?', @p57='?', @p58='?', @p59='?', @p60='?' (DbType = Int32), @p61='?', @p62='?' (DbType = Boolean), @p63='?', @p64='?', @p65='?', @p66='?', @p67='?', @p68='?', @p69='?', @p70='?', @p71='?', @p72='?', @p73='?', @p74='?', @p75='?' (DbType = DateTime), @p76='?', @p77='?', @p78='?' (DbType = Guid), @p79='?', @p80='?', @p81='?', @p82='?', @p83='?', @p84='?', @p85='?', @p86='?', @p87='?', @p88='?', @p89='?', @p90='?' (DbType = DateTime), @p91='?' (DbType = DateTime), @p92='?' (DbType = Int32), @p93='?', @p94='?' (DbType = Int32), @p95='?', @p96='?', @p97='?', @p98='?', @p99='?' (DbType = Int32), @p100='?', @p101='?' (DbType = Boolean), @p102='?', @p103='?', @p104='?', @p105='?', @p106='?', @p107='?', @p108='?', @p109='?', @p110='?', @p111='?', @p112='?', @p113='?', @p114='?' (DbType = DateTime), @p115='?', @p116='?', @p117='?' (DbType = Guid), @p118='?', @p119='?', @p120='?', @p121='?', @p122='?', @p123='?', @p124='?', @p125='?', @p126='?', @p127='?', @p128='?', @p129='?' (DbType = DateTime), @p130='?' (DbType = DateTime), @p131='?' (DbType = Int32), @p132='?', @p133='?' (DbType = Int32), @p134='?', @p135='?', @p136='?', @p137='?', @p138='?' (DbType = Int32), @p139='?', @p140='?' (DbType = Boolean), @p141='?', @p142='?', @p143='?', @p144='?', @p145='?', @p146='?', @p147='?', @p148='?', @p149='?', @p150='?', @p151='?', @p152='?', @p153='?' (DbType = DateTime), @p154='?', @p155='?', @p156='?' (DbType = Guid), @p157='?', @p158='?', @p159='?', @p160='?', @p161='?', @p162='?', @p163='?', @p164='?', @p165='?', @p166='?', @p167='?', @p168='?' (DbType = DateTime), @p169='?' (DbType = DateTime), @p170='?' (DbType = Int32), @p171='?', @p172='?' (DbType = Int32), @p173='?', @p174='?', @p175='?', @p176='?', @p177='?' (DbType = Int32), @p178='?', @p179='?' (DbType = Boolean), @p180='?', @p181='?', @p182='?', @p183='?', @p184='?', @p185='?', @p186='?', @p187='?', @p188='?', @p189='?', @p190='?', @p191='?', @p192='?' (DbType = DateTime), @p193='?', @p194='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53, @p54, @p55, @p56, @p57, @p58, @p59, @p60, @p61, @p62, @p63, @p64, @p65, @p66, @p67, @p68, @p69, @p70, @p71, @p72, @p73, @p74, @p75, @p76, @p77);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p78, @p79, @p80, @p81, @p82, @p83, @p84, @p85, @p86, @p87, @p88, @p89, @p90, @p91, @p92, @p93, @p94, @p95, @p96, @p97, @p98, @p99, @p100, @p101, @p102, @p103, @p104, @p105, @p106, @p107, @p108, @p109, @p110, @p111, @p112, @p113, @p114, @p115, @p116);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p117, @p118, @p119, @p120, @p121, @p122, @p123, @p124, @p125, @p126, @p127, @p128, @p129, @p130, @p131, @p132, @p133, @p134, @p135, @p136, @p137, @p138, @p139, @p140, @p141, @p142, @p143, @p144, @p145, @p146, @p147, @p148, @p149, @p150, @p151, @p152, @p153, @p154, @p155);
+INSERT INTO kreditoren (id, additional_address_info, bank_account_iban, bank_bic, bank_name, birth_country, birth_name, birth_place, city, city_district, contact_email, country, created_at, date_of_birth, door_position, ebo_address, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, last_name, name, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, registration_number, represented_by, street, updated_at, vat_id, zip_code)
+VALUES (@p156, @p157, @p158, @p159, @p160, @p161, @p162, @p163, @p164, @p165, @p166, @p167, @p168, @p169, @p170, @p171, @p172, @p173, @p174, @p175, @p176, @p177, @p178, @p179, @p180, @p181, @p182, @p183, @p184, @p185, @p186, @p187, @p188, @p189, @p190, @p191, @p192, @p193, @p194);
+2025-11-28 10:00:52.131 +01:00 [INF] Seeded 5 kreditoren
+2025-11-28 10:00:52.132 +01:00 [WRN] ==========================================================
+2025-11-28 10:00:52.132 +01:00 [WRN] FIXED TEST CREDENTIALS FOR E2E TESTING:
+2025-11-28 10:00:52.132 +01:00 [WRN] ==========================================================
+2025-11-28 10:00:52.132 +01:00 [WRN] admin@monetaris.com       → admin123
+2025-11-28 10:00:52.132 +01:00 [WRN] sarah@monetaris.com       → sarah123
+2025-11-28 10:00:52.132 +01:00 [WRN] max@monetaris.com         → max123
+2025-11-28 10:00:52.132 +01:00 [WRN] 007@monetaris.com         → bond123
+2025-11-28 10:00:52.132 +01:00 [WRN] lara@monetaris.com        → lara123
+2025-11-28 10:00:52.132 +01:00 [WRN] client@techsolutions.de   → client123
+2025-11-28 10:00:52.133 +01:00 [WRN] max@muster.de             → debtor123
+2025-11-28 10:00:52.133 +01:00 [WRN] ==========================================================
+2025-11-28 10:00:53.620 +01:00 [INF] Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Guid), @p6='?', @p7='?', @p8='?', @p9='?' (DbType = DateTime), @p10='?' (DbType = Guid), @p11='?', @p12='?' (DbType = DateTime), @p13='?', @p14='?' (DbType = Boolean), @p15='?' (DbType = Guid), @p16='?', @p17='?', @p18='?', @p19='?' (DbType = DateTime), @p20='?' (DbType = Guid), @p21='?', @p22='?' (DbType = DateTime), @p23='?', @p24='?' (DbType = Boolean), @p25='?' (DbType = Guid), @p26='?', @p27='?', @p28='?', @p29='?' (DbType = DateTime), @p30='?' (DbType = Guid), @p31='?', @p32='?' (DbType = DateTime), @p33='?', @p34='?' (DbType = Boolean), @p35='?' (DbType = Guid), @p36='?', @p37='?', @p38='?', @p39='?' (DbType = DateTime), @p40='?' (DbType = Guid), @p41='?', @p42='?' (DbType = DateTime), @p43='?', @p44='?' (DbType = Boolean), @p45='?' (DbType = Guid), @p46='?', @p47='?', @p48='?', @p49='?' (DbType = DateTime), @p50='?' (DbType = Guid), @p51='?', @p52='?' (DbType = DateTime), @p53='?', @p54='?' (DbType = Boolean), @p55='?' (DbType = Guid), @p56='?', @p57='?', @p58='?', @p59='?' (DbType = DateTime), @p60='?' (DbType = Guid), @p61='?', @p62='?' (DbType = DateTime), @p63='?', @p64='?' (DbType = Boolean), @p65='?' (DbType = Guid), @p66='?', @p67='?', @p68='?', @p69='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p50, @p51, @p52, @p53, @p54, @p55, @p56, @p57, @p58, @p59);
+INSERT INTO users (id, avatar_initials, created_at, email, is_active, kreditor_id, name, password_hash, role, updated_at)
+VALUES (@p60, @p61, @p62, @p63, @p64, @p65, @p66, @p67, @p68, @p69);
+2025-11-28 10:00:53.623 +01:00 [INF] Seeded 7 users with secure random passwords
+2025-11-28 10:00:53.624 +01:00 [WRN] IMPORTANT: Users MUST change password on first login!
+2025-11-28 10:00:53.760 +01:00 [INF] Executed DbCommand (8ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Guid), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = DateTime), @p16='?' (DbType = DateTime), @p17='?' (DbType = Int32), @p18='?', @p19='?', @p20='?' (DbType = Int32), @p21='?', @p22='?', @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Boolean), @p28='?' (DbType = Guid), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?', @p34='?', @p35='?', @p36='?', @p37='?', @p38='?', @p39='?', @p40='?', @p41='?', @p42='?', @p43='?' (DbType = Decimal), @p44='?' (DbType = DateTime), @p45='?', @p46='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO debtors (id, additional_address_info, address_last_checked, address_status, agent_id, bank_bic, bank_iban, bank_name, birth_country, birth_name, birth_place, city, city_district, company_name, country, created_at, date_of_birth, door_position, ebo_address, email, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, kreditor_id, last_name, notes, open_cases, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, register_number, represented_by, risk_score, street, total_debt, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46);
+2025-11-28 10:00:53.761 +01:00 [INF] Created portal test debtor
+2025-11-28 10:00:53.849 +01:00 [INF] Executed DbCommand (6ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Decimal), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Decimal), @p7='?', @p8='?' (DbType = DateTime), @p9='?', @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid), @p12='?' (DbType = DateTime), @p13='?' (DbType = Decimal), @p14='?' (DbType = DateTime), @p15='?' (DbType = Boolean), @p16='?' (DbType = Decimal), @p17='?' (DbType = DateTime), @p18='?' (DbType = DateTime), @p19='?', @p20='?' (DbType = Boolean), @p21='?' (DbType = Guid), @p22='?' (DbType = DateTime), @p23='?', @p24='?' (DbType = Decimal), @p25='?' (DbType = Decimal), @p26='?', @p27='?' (DbType = DateTime), @p28='?' (DbType = DateTime)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO cases (id, additional_costs, agent_id, ai_analysis, claim_description, competent_court, costs, court_file_number, created_at, currency, date_of_origin, debtor_id, due_date, interest, interest_end_date, interest_on_costs, interest_rate, interest_start_date, invoice_date, invoice_number, is_variable_interest, kreditor_id, next_action_date, payment_allocation_notes, principal_amount, procedure_costs, status, statute_of_limitations_date, updated_at)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28);
+2025-11-28 10:00:53.850 +01:00 [INF] Created portal test case (Invoice: RE-PORTAL-TEST, ZipCode: 10115)
+2025-11-28 10:00:53.861 +01:00 [ERR] Failed executing DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?' (DbType = Guid), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?', @p10='?', @p11='?', @p12='?', @p13='?', @p14='?', @p15='?' (DbType = DateTime), @p16='?' (DbType = DateTime), @p17='?' (DbType = Int32), @p18='?', @p19='?', @p20='?' (DbType = Int32), @p21='?', @p22='?', @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Boolean), @p28='?' (DbType = Guid), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?', @p34='?', @p35='?', @p36='?', @p37='?', @p38='?', @p39='?', @p40='?', @p41='?', @p42='?', @p43='?' (DbType = Decimal), @p44='?' (DbType = DateTime), @p45='?', @p46='?'], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO debtors (id, additional_address_info, address_last_checked, address_status, agent_id, bank_bic, bank_iban, bank_name, birth_country, birth_name, birth_place, city, city_district, company_name, country, created_at, date_of_birth, door_position, ebo_address, email, entity_type, fax, file_reference, first_name, floor, gender, house_number, is_deceased, kreditor_id, last_name, notes, open_cases, po_box, po_box_zip_code, partners, phone_landline, phone_mobile, place_of_death, register_court, register_number, represented_by, risk_score, street, total_debt, updated_at, vat_id, zip_code)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46);
+2025-11-28 10:00:53.878 +01:00 [ERR] An exception occurred in the database while saving changes for context type 'MonetarisApi.Data.ApplicationDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+2025-11-28 10:00:53.883 +01:00 [ERR] An error occurred while applying database migrations or seeding data
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at MonetarisApi.Data.DatabaseSeeder.SeedAsync() in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Data\DatabaseSeeder.cs:line 196
+   at Program.<Main>$(String[] args) in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Program.cs:line 262
+2025-11-28 10:00:53.894 +01:00 [FTL] Application terminated unexpectedly
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> System.ArgumentException: Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone', only UTC is supported. Note that it's not possible to mix DateTimes with different Kinds in an array, range, or multirange. (Parameter 'value')
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(DateTime value, Nullable`1 expectedPgTypeId, Boolean validateOnly)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver.<>c.<CreateResolver>b__0_0(DateTimeConverterResolver`1 resolver, DateTime value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.Converters.DateTimeConverterResolver`1.Get(T value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgConverterResolver`1.GetAsObjectInternal(PgTypeInfo typeInfo, Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgResolverTypeInfo.GetResolutionAsObject(Object value, Nullable`1 expectedPgTypeId)
+   at Npgsql.Internal.PgTypeInfo.GetObjectResolution(Object value)
+   at Npgsql.NpgsqlParameter.ResolveConverter(PgTypeInfo typeInfo)
+   at Npgsql.NpgsqlParameter.ResolveTypeInfo(PgSerializerOptions options)
+   at Npgsql.NpgsqlParameterCollection.ProcessParameters(PgSerializerOptions options, Boolean validateValues, CommandType commandType)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabase.SaveChangesAsync(IList`1 entries, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at MonetarisApi.Data.DatabaseSeeder.SeedAsync() in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Data\DatabaseSeeder.cs:line 196
+   at Program.<Main>$(String[] args) in C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi\Program.cs:line 262
+2025-11-28 10:03:34.717 +01:00 [INF] Starting Monetaris API
+2025-11-28 10:03:35.205 +01:00 [INF] Applying database migrations...
+2025-11-28 10:03:36.065 +01:00 [INF] Executed DbCommand (14ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:03:36.254 +01:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    migration_id character varying(150) NOT NULL,
+    product_version character varying(32) NOT NULL,
+    CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
+);
+2025-11-28 10:03:36.264 +01:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+2025-11-28 10:03:36.267 +01:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+2025-11-28 10:03:36.270 +01:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT migration_id, product_version
+FROM "__EFMigrationsHistory"
+ORDER BY migration_id;
+2025-11-28 10:03:36.281 +01:00 [INF] No migrations were applied. The database is already up to date.
+2025-11-28 10:03:36.290 +01:00 [INF] Database migrations applied successfully
+2025-11-28 10:03:36.531 +01:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM kreditoren AS k)
+2025-11-28 10:03:36.540 +01:00 [INF] Database already seeded, skipping...
+2025-11-28 10:03:36.680 +01:00 [INF] Monetaris API started successfully
+2025-11-28 10:03:36.709 +01:00 [INF] User profile is available. Using 'C:\Users\fandrich\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-11-28 10:03:36.811 +01:00 [INF] Now listening on: http://localhost:4002
+2025-11-28 10:03:36.812 +01:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-11-28 10:03:36.812 +01:00 [INF] Hosting environment: Development
+2025-11-28 10:03:36.813 +01:00 [INF] Content root path: C:\Users\fandrich\OneDrive - Strukturschmiede - Ihr Erfolg GmbH\Mieterverwaltung\Mahnwesen\Monetaris\Backend\MonetarisApi

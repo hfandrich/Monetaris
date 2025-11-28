@@ -7,6 +7,7 @@ using Monetaris.Debtor.Models;
 using Monetaris.Shared.Models;
 using Monetaris.Shared.Interfaces;
 using Monetaris.Shared.Models.Entities;
+using Monetaris.Shared.Enums;
 using System.Security.Claims;
 
 namespace Monetaris.Debtor.Api;
@@ -44,7 +45,7 @@ public class CreateDebtor : ControllerBase
     public async Task<IActionResult> Handle([FromBody] CreateDebtorRequest request)
     {
         _logger.LogInformation("CreateDebtor endpoint called: {Name}",
-            request.IsCompany ? request.CompanyName : $"{request.FirstName} {request.LastName}");
+            request.EntityType != EntityType.NATURAL_PERSON ? request.CompanyName : $"{request.FirstName} {request.LastName}");
 
         var currentUser = await GetCurrentUserAsync();
         if (currentUser == null)

@@ -6,6 +6,7 @@ using Monetaris.Shared.Enums;
 using Monetaris.Shared.Interfaces;
 using Monetaris.Shared.Models;
 using Monetaris.Shared.Models.Entities;
+using System.Security;
 
 namespace Monetaris.Document.Services;
 
@@ -19,6 +20,37 @@ public class DocumentService : IDocumentService
     private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
     private static readonly string[] AllowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx", ".xls", ".xlsx" };
     private readonly string _uploadPath;
+
+    /// <summary>
+    /// File signature validation (Magic Bytes) for security
+    /// Maps file extensions to their known magic byte signatures
+    /// </summary>
+    private static readonly Dictionary<string, byte[][]> FileSignatures = new()
+    {
+        { ".pdf", new[] { new byte[] { 0x25, 0x50, 0x44, 0x46 } } }, // %PDF
+        { ".jpg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".jpeg", new[] { new byte[] { 0xFF, 0xD8, 0xFF } } },
+        { ".png", new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } } },
+        { ".doc", new[] { new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 } } },
+        { ".docx", new[] { new byte[] { 0x50, 0x4B, 0x03, 0x04 } } }, // ZIP-based
+        { ".xls", new[] { new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 } } },
+        { ".xlsx", new[] { new byte[] { 0x50, 0x4B, 0x03, 0x04 } } }  // ZIP-based
+    };
+
+    /// <summary>
+    /// Expected Content-Types for file extensions
+    /// </summary>
+    private static readonly Dictionary<string, string[]> ExpectedContentTypes = new()
+    {
+        { ".pdf", new[] { "application/pdf" } },
+        { ".jpg", new[] { "image/jpeg" } },
+        { ".jpeg", new[] { "image/jpeg" } },
+        { ".png", new[] { "image/png" } },
+        { ".doc", new[] { "application/msword" } },
+        { ".docx", new[] { "application/vnd.openxmlformats-officedocument.wordprocessingml.document" } },
+        { ".xls", new[] { "application/vnd.ms-excel" } },
+        { ".xlsx", new[] { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } }
+    };
 
     public DocumentService(IApplicationDbContext context, ILogger<DocumentService> logger)
     {
@@ -39,7 +71,7 @@ public class DocumentService : IDocumentService
         {
             // Verify debtor exists and user has access
             var debtor = await _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .FirstOrDefaultAsync(d => d.Id == debtorId);
 
             if (debtor == null)
@@ -69,6 +101,24 @@ public class DocumentService : IDocumentService
                 return Result<DocumentDto>.Failure($"File type '{extension}' is not allowed");
             }
 
+            // Validate Content-Type matches extension
+            var contentTypeValidation = ValidateContentType(file.ContentType, extension);
+            if (!contentTypeValidation.isValid)
+            {
+                _logger.LogWarning("Content-Type mismatch for file {FileName}: ContentType={ContentType}, Extension={Extension}, User={UserId}",
+                    file.FileName, file.ContentType, extension, currentUser.Id);
+                return Result<DocumentDto>.Failure(contentTypeValidation.errorMessage);
+            }
+
+            // Validate file signature (magic bytes)
+            var signatureValidation = await ValidateFileSignature(file, extension);
+            if (!signatureValidation.isValid)
+            {
+                _logger.LogWarning("File signature validation failed for {FileName}: Extension={Extension}, User={UserId}",
+                    file.FileName, extension, currentUser.Id);
+                return Result<DocumentDto>.Failure(signatureValidation.errorMessage);
+            }
+
             // Determine document type
             var docType = GetDocumentType(extension);
 
@@ -82,6 +132,15 @@ public class DocumentService : IDocumentService
             // Generate unique filename
             var uniqueFileName = $"{Guid.NewGuid()}{extension}";
             var filePath = Path.Combine(debtorDir, uniqueFileName);
+
+            // Path traversal protection - verify the final path is within upload directory
+            var fullPath = Path.GetFullPath(filePath);
+            var uploadPathFull = Path.GetFullPath(_uploadPath);
+            if (!fullPath.StartsWith(uploadPathFull, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("Path traversal attempt detected: {FilePath}, User={UserId}", filePath, currentUser.Id);
+                throw new SecurityException("Invalid file path detected");
+            }
 
             // Save file
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -123,7 +182,7 @@ public class DocumentService : IDocumentService
         try
         {
             var debtor = await _context.Debtors
-                .Include(d => d.Tenant)
+                .Include(d => d.Kreditor)
                 .FirstOrDefaultAsync(d => d.Id == debtorId);
 
             if (debtor == null)
@@ -162,7 +221,7 @@ public class DocumentService : IDocumentService
         {
             var document = await _context.Documents
                 .Include(d => d.Debtor)
-                .ThenInclude(d => d.Tenant)
+                .ThenInclude(d => d.Kreditor)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (document == null)
@@ -200,7 +259,7 @@ public class DocumentService : IDocumentService
         {
             var document = await _context.Documents
                 .Include(d => d.Debtor)
-                .ThenInclude(d => d.Tenant)
+                .ThenInclude(d => d.Kreditor)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (document == null)
@@ -230,7 +289,7 @@ public class DocumentService : IDocumentService
         {
             var document = await _context.Documents
                 .Include(d => d.Debtor)
-                .ThenInclude(d => d.Tenant)
+                .ThenInclude(d => d.Kreditor)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (document == null)
@@ -274,13 +333,13 @@ public class DocumentService : IDocumentService
 
         if (currentUser.Role == UserRole.CLIENT)
         {
-            return currentUser.TenantId == debtor.TenantId;
+            return currentUser.KreditorId == debtor.KreditorId;
         }
 
         if (currentUser.Role == UserRole.AGENT)
         {
-            return await _context.UserTenantAssignments
-                .AnyAsync(uta => uta.UserId == currentUser.Id && uta.TenantId == debtor.TenantId);
+            return await _context.UserKreditorAssignments
+                .AnyAsync(uka => uka.UserId == currentUser.Id && uka.KreditorId == debtor.KreditorId);
         }
 
         return false;
@@ -322,5 +381,83 @@ public class DocumentService : IDocumentService
             PreviewUrl = document.PreviewUrl,
             UploadedAt = document.UploadedAt
         };
+    }
+
+    /// <summary>
+    /// Validates file signature (magic bytes) to ensure file content matches extension
+    /// </summary>
+    /// <param name="file">The uploaded file</param>
+    /// <param name="extension">The file extension</param>
+    /// <returns>Tuple indicating if validation passed and error message if not</returns>
+    private async Task<(bool isValid, string errorMessage)> ValidateFileSignature(IFormFile file, string extension)
+    {
+        if (!FileSignatures.ContainsKey(extension))
+        {
+            // No signature defined for this extension, allow it
+            return (true, string.Empty);
+        }
+
+        var signatures = FileSignatures[extension];
+
+        // Read the file header (first 8 bytes should be enough for most signatures)
+        var headerBytes = new byte[8];
+        using (var stream = file.OpenReadStream())
+        {
+            var bytesRead = await stream.ReadAsync(headerBytes, 0, headerBytes.Length);
+            if (bytesRead == 0)
+            {
+                return (false, "File is empty or cannot be read");
+            }
+        }
+
+        // Check if file header matches any of the expected signatures
+        foreach (var signature in signatures)
+        {
+            if (headerBytes.Take(signature.Length).SequenceEqual(signature))
+            {
+                return (true, string.Empty);
+            }
+        }
+
+        return (false, $"File content does not match the '{extension}' file type. The file may be corrupted or have an incorrect extension.");
+    }
+
+    /// <summary>
+    /// Validates that the Content-Type header matches the file extension
+    /// </summary>
+    /// <param name="contentType">The Content-Type from the HTTP request</param>
+    /// <param name="extension">The file extension</param>
+    /// <returns>Tuple indicating if validation passed and error message if not</returns>
+    private (bool isValid, string errorMessage) ValidateContentType(string contentType, string extension)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            return (false, "Content-Type header is missing");
+        }
+
+        if (!ExpectedContentTypes.ContainsKey(extension))
+        {
+            // No expected content type defined, allow it
+            return (true, string.Empty);
+        }
+
+        var expectedTypes = ExpectedContentTypes[extension];
+
+        // Normalize content type (remove charset, etc.)
+        var normalizedContentType = contentType.Split(';')[0].Trim().ToLowerInvariant();
+
+        if (expectedTypes.Contains(normalizedContentType, StringComparer.OrdinalIgnoreCase))
+        {
+            return (true, string.Empty);
+        }
+
+        // Some browsers may send generic types for certain files
+        var allowedGenericTypes = new[] { "application/octet-stream" };
+        if (allowedGenericTypes.Contains(normalizedContentType, StringComparer.OrdinalIgnoreCase))
+        {
+            return (true, string.Empty);
+        }
+
+        return (false, $"Content-Type '{contentType}' does not match expected type for '{extension}' files");
     }
 }

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { AppSidebar } from './layout/AppSidebar';
 import { AppHeader } from './layout/AppHeader';
-import { GeminiAssistant } from './GeminiAssistant';
 import { CommandPalette } from './CommandPalette';
 import { ShortcutsModal } from './layout/ShortcutsModal';
+import { SessionTimeoutWarning } from './SessionTimeoutWarning';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       }
     }
     return 'light';
+  });
+
+  // Session timeout hook (30 min timeout, 5 min warning)
+  const { showWarning, remainingTime, extendSession } = useSessionTimeout({
+    timeoutMinutes: 30,
+    warningMinutes: 5,
+    onTimeout: onLogout
   });
 
   useEffect(() => {
@@ -123,8 +131,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           {children}
         </main>
 
-        {/* --- GLOBAL AI ASSISTANT --- */}
-        <GeminiAssistant />
 
         {/* --- COMMAND PALETTE --- */}
         <CommandPalette
@@ -135,6 +141,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
         {/* --- SHORTCUTS HELP --- */}
         <ShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+        {/* --- SESSION TIMEOUT WARNING --- */}
+        <SessionTimeoutWarning
+          isOpen={showWarning}
+          remainingTime={remainingTime}
+          onExtend={extendSession}
+          onLogout={onLogout}
+        />
       </div>
     </div>
   );

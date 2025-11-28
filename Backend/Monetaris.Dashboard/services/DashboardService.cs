@@ -28,29 +28,29 @@ public class DashboardService : IDashboardService
         {
             IQueryable<Case> casesQuery = _context.Cases;
             IQueryable<Debtor> debtorsQuery = _context.Debtors;
-            IQueryable<Tenant> tenantsQuery = _context.Tenants;
+            IQueryable<Kreditor> kreditorenQuery = _context.Kreditoren;
 
             // Apply role-based filtering
             if (currentUser.Role == UserRole.CLIENT)
             {
-                if (currentUser.TenantId == null)
+                if (currentUser.KreditorId == null)
                 {
-                    return Result<DashboardStatsDto>.Failure("Client user has no assigned tenant");
+                    return Result<DashboardStatsDto>.Failure("Client user has no assigned kreditor");
                 }
-                casesQuery = casesQuery.Where(c => c.TenantId == currentUser.TenantId.Value);
-                debtorsQuery = debtorsQuery.Where(d => d.TenantId == currentUser.TenantId.Value);
-                tenantsQuery = tenantsQuery.Where(t => t.Id == currentUser.TenantId.Value);
+                casesQuery = casesQuery.Where(c => c.KreditorId == currentUser.KreditorId.Value);
+                debtorsQuery = debtorsQuery.Where(d => d.KreditorId == currentUser.KreditorId.Value);
+                kreditorenQuery = kreditorenQuery.Where(k => k.Id == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                casesQuery = casesQuery.Where(c => assignedTenantIds.Contains(c.TenantId));
-                debtorsQuery = debtorsQuery.Where(d => assignedTenantIds.Contains(d.TenantId));
-                tenantsQuery = tenantsQuery.Where(t => assignedTenantIds.Contains(t.Id));
+                casesQuery = casesQuery.Where(c => assignedKreditorIds.Contains(c.KreditorId));
+                debtorsQuery = debtorsQuery.Where(d => assignedKreditorIds.Contains(d.KreditorId));
+                kreditorenQuery = kreditorenQuery.Where(k => assignedKreditorIds.Contains(k.Id));
             }
             // ADMIN sees all
 
@@ -101,7 +101,7 @@ public class DashboardService : IDashboardService
             var projectedRecovery = totalVolume * (decimal)(successRate / 100);
 
             var totalDebtors = await debtorsQuery.CountAsync();
-            var totalTenants = await tenantsQuery.CountAsync();
+            var totalKreditoren = await kreditorenQuery.CountAsync();
 
             var stats = new DashboardStatsDto
             {
@@ -111,7 +111,7 @@ public class DashboardService : IDashboardService
                 SuccessRate = Math.Round(successRate, 2),
                 ProjectedRecovery = projectedRecovery,
                 TotalDebtors = totalDebtors,
-                TotalTenants = totalTenants
+                TotalKreditoren = totalKreditoren
             };
 
             _logger.LogInformation("Retrieved dashboard stats for user {UserId}", currentUser.Id);
@@ -134,20 +134,20 @@ public class DashboardService : IDashboardService
             // Apply role-based filtering
             if (currentUser.Role == UserRole.CLIENT)
             {
-                if (currentUser.TenantId == null)
+                if (currentUser.KreditorId == null)
                 {
-                    return Result<FinancialChartDto>.Failure("Client user has no assigned tenant");
+                    return Result<FinancialChartDto>.Failure("Client user has no assigned kreditor");
                 }
-                casesQuery = casesQuery.Where(c => c.TenantId == currentUser.TenantId.Value);
+                casesQuery = casesQuery.Where(c => c.KreditorId == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                casesQuery = casesQuery.Where(c => assignedTenantIds.Contains(c.TenantId));
+                casesQuery = casesQuery.Where(c => assignedKreditorIds.Contains(c.KreditorId));
             }
             // ADMIN sees all
 
@@ -202,21 +202,21 @@ public class DashboardService : IDashboardService
             // Search cases
             IQueryable<Case> casesQuery = _context.Cases
                 .Include(c => c.Debtor)
-                .Include(c => c.Tenant);
+                .Include(c => c.Kreditor);
 
             // Apply role-based filtering
-            if (currentUser.Role == UserRole.CLIENT && currentUser.TenantId.HasValue)
+            if (currentUser.Role == UserRole.CLIENT && currentUser.KreditorId.HasValue)
             {
-                casesQuery = casesQuery.Where(c => c.TenantId == currentUser.TenantId.Value);
+                casesQuery = casesQuery.Where(c => c.KreditorId == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                casesQuery = casesQuery.Where(c => assignedTenantIds.Contains(c.TenantId));
+                casesQuery = casesQuery.Where(c => assignedKreditorIds.Contains(c.KreditorId));
             }
 
             var matchingCases = await casesQuery
@@ -227,7 +227,7 @@ public class DashboardService : IDashboardService
 
             foreach (var caseEntity in matchingCases)
             {
-                var debtorName = caseEntity.Debtor.IsCompany
+                var debtorName = caseEntity.Debtor.EntityType != EntityType.NATURAL_PERSON
                     ? caseEntity.Debtor.CompanyName
                     : $"{caseEntity.Debtor.FirstName} {caseEntity.Debtor.LastName}";
 
@@ -244,18 +244,18 @@ public class DashboardService : IDashboardService
             // Search debtors
             IQueryable<Debtor> debtorsQuery = _context.Debtors;
 
-            if (currentUser.Role == UserRole.CLIENT && currentUser.TenantId.HasValue)
+            if (currentUser.Role == UserRole.CLIENT && currentUser.KreditorId.HasValue)
             {
-                debtorsQuery = debtorsQuery.Where(d => d.TenantId == currentUser.TenantId.Value);
+                debtorsQuery = debtorsQuery.Where(d => d.KreditorId == currentUser.KreditorId.Value);
             }
             else if (currentUser.Role == UserRole.AGENT)
             {
-                var assignedTenantIds = await _context.UserTenantAssignments
-                    .Where(uta => uta.UserId == currentUser.Id)
-                    .Select(uta => uta.TenantId)
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
                     .ToListAsync();
 
-                debtorsQuery = debtorsQuery.Where(d => assignedTenantIds.Contains(d.TenantId));
+                debtorsQuery = debtorsQuery.Where(d => assignedKreditorIds.Contains(d.KreditorId));
             }
 
             var matchingDebtors = await debtorsQuery
@@ -268,7 +268,7 @@ public class DashboardService : IDashboardService
 
             foreach (var debtor in matchingDebtors)
             {
-                var name = debtor.IsCompany
+                var name = debtor.EntityType != EntityType.NATURAL_PERSON
                     ? debtor.CompanyName
                     : $"{debtor.FirstName} {debtor.LastName}";
 
@@ -282,25 +282,25 @@ public class DashboardService : IDashboardService
                 });
             }
 
-            // Search tenants (ADMIN only)
+            // Search kreditoren (ADMIN only)
             if (currentUser.Role == UserRole.ADMIN)
             {
-                var matchingTenants = await _context.Tenants
-                    .Where(t => t.Name.ToLower().Contains(searchLower) ||
-                               t.RegistrationNumber.ToLower().Contains(searchLower) ||
-                               t.ContactEmail.ToLower().Contains(searchLower))
+                var matchingKreditoren = await _context.Kreditoren
+                    .Where(k => k.Name.ToLower().Contains(searchLower) ||
+                               k.RegistrationNumber.ToLower().Contains(searchLower) ||
+                               k.ContactEmail.ToLower().Contains(searchLower))
                     .Take(5)
                     .ToListAsync();
 
-                foreach (var tenant in matchingTenants)
+                foreach (var kreditor in matchingKreditoren)
                 {
                     results.Add(new SearchResultDto
                     {
-                        Type = "tenant",
-                        Id = tenant.Id,
-                        Title = tenant.Name,
-                        Subtitle = tenant.ContactEmail,
-                        AdditionalInfo = $"Reg. No.: {tenant.RegistrationNumber}"
+                        Type = "kreditor",
+                        Id = kreditor.Id,
+                        Title = kreditor.Name,
+                        Subtitle = kreditor.ContactEmail,
+                        AdditionalInfo = $"Reg. No.: {kreditor.RegistrationNumber}"
                     });
                 }
             }

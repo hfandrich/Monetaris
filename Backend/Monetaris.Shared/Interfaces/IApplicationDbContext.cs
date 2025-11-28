@@ -9,9 +9,9 @@ namespace Monetaris.Shared.Interfaces;
 /// </summary>
 public interface IApplicationDbContext
 {
-    DbSet<Tenant> Tenants { get; }
+    DbSet<Kreditor> Kreditoren { get; }
     DbSet<User> Users { get; }
-    DbSet<UserTenantAssignment> UserTenantAssignments { get; }
+    DbSet<UserKreditorAssignment> UserKreditorAssignments { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<Debtor> Debtors { get; }
     DbSet<Case> Cases { get; }

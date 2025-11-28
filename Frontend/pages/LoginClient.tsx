@@ -12,7 +12,7 @@ interface LoginProps {
 
 export const LoginClient: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('client@techsolutions.de');
-  const [password, setPassword] = useState('password');
+  const [password, setPassword] = useState('client123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

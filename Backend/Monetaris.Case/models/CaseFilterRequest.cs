@@ -7,7 +7,7 @@ namespace Monetaris.Case.Models;
 /// </summary>
 public class CaseFilterRequest
 {
-    public Guid? TenantId { get; set; }
+    public Guid? KreditorId { get; set; }
     public Guid? DebtorId { get; set; }
     public Guid? AgentId { get; set; }
     public CaseStatus? Status { get; set; }

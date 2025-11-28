@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,12 +45,14 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         using var scope = host.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+        var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         // Ensure database is created
         db.Database.EnsureCreated();
 
-        // Seed test data
-        var seeder = new DatabaseSeeder(db, logger);
+        // Seed test data (env is Testing, so seeder will run)
+        var seeder = new DatabaseSeeder(db, logger, env, configuration);
         seeder.SeedAsync().Wait();
 
         return host;

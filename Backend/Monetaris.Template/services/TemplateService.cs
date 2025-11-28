@@ -5,6 +5,7 @@ using Monetaris.Shared.Interfaces;
 using Monetaris.Shared.Models;
 using Monetaris.Shared.Models.Entities;
 using Monetaris.Template.Models;
+using Monetaris.Shared.Helpers;
 using System.Text.RegularExpressions;
 
 namespace Monetaris.Template.Services;
@@ -26,23 +27,63 @@ public partial class TemplateService : ITemplateService
         _logger = logger;
     }
 
-    public async Task<Result<List<TemplateDto>>> GetAllAsync()
+    public async Task<Result<List<TemplateDto>>> GetAllAsync(User currentUser)
     {
         try
         {
-            var templates = await _context.Templates
+            IQueryable<Shared.Models.Entities.Template> query = _context.Templates;
+
+            // Apply role-based filtering
+            if (currentUser.Role == UserRole.CLIENT)
+            {
+                // CLIENT sees only templates for their kreditor + global templates
+                query = query.Where(t => t.KreditorId == currentUser.KreditorId || t.KreditorId == null);
+
+                _logger.LogInformation("CLIENT {UserId} accessing templates for kreditor {KreditorId}",
+                    currentUser.Id, currentUser.KreditorId);
+            }
+            else if (currentUser.Role == UserRole.AGENT)
+            {
+                // AGENT sees templates for assigned kreditoren + global templates
+                var assignedKreditorIds = await _context.UserKreditorAssignments
+                    .Where(uka => uka.UserId == currentUser.Id)
+                    .Select(uka => uka.KreditorId)
+                    .ToListAsync();
+
+                query = query.Where(t =>
+                    (t.KreditorId.HasValue && assignedKreditorIds.Contains(t.KreditorId.Value)) ||
+                    t.KreditorId == null);
+
+                _logger.LogInformation("AGENT {UserId} accessing templates for {KreditorCount} assigned kreditoren",
+                    currentUser.Id, assignedKreditorIds.Count);
+            }
+            else if (currentUser.Role == UserRole.ADMIN)
+            {
+                // ADMIN sees all templates
+                _logger.LogInformation("ADMIN {UserId} accessing all templates", currentUser.Id);
+            }
+            else
+            {
+                // DEBTOR role should not access templates
+                _logger.LogWarning("User {UserId} with role {Role} attempted to access templates",
+                    currentUser.Id, currentUser.Role);
+                return Result<List<TemplateDto>>.Failure("Access denied");
+            }
+
+            var templates = await query
                 .OrderBy(t => t.Name)
                 .ToListAsync();
 
             var templateDtos = templates.Select(MapToDto).ToList();
 
-            _logger.LogInformation("Retrieved {Count} templates", templateDtos.Count);
+            _logger.LogInformation("Retrieved {Count} templates for user {UserId}",
+                templateDtos.Count, currentUser.Id);
 
             return Result<List<TemplateDto>>.Success(templateDtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving templates");
+            _logger.LogError(ex, "Error retrieving templates for user {UserId}", currentUser.Id);
             return Result<List<TemplateDto>>.Failure("An error occurred while retrieving templates");
         }
     }
@@ -199,7 +240,7 @@ public partial class TemplateService : ITemplateService
             {
                 var caseEntity = await _context.Cases
                     .Include(c => c.Debtor)
-                    .Include(c => c.Tenant)
+                    .Include(c => c.Kreditor)
                     .Include(c => c.Agent)
                     .FirstOrDefaultAsync(c => c.Id == request.CaseId.Value);
 
@@ -211,13 +252,13 @@ public partial class TemplateService : ITemplateService
                 // Add case variables
                 AddCaseVariables(variables, caseEntity);
                 AddDebtorVariables(variables, caseEntity.Debtor);
-                AddTenantVariables(variables, caseEntity.Tenant);
+                AddKreditorVariables(variables, caseEntity.Kreditor);
             }
             // Load debtor data if provided (and no case)
             else if (request.DebtorId.HasValue)
             {
                 var debtor = await _context.Debtors
-                    .Include(d => d.Tenant)
+                    .Include(d => d.Kreditor)
                     .FirstOrDefaultAsync(d => d.Id == request.DebtorId.Value);
 
                 if (debtor == null)
@@ -226,7 +267,7 @@ public partial class TemplateService : ITemplateService
                 }
 
                 AddDebtorVariables(variables, debtor);
-                AddTenantVariables(variables, debtor.Tenant);
+                AddKreditorVariables(variables, debtor.Kreditor);
             }
 
             // Render content
@@ -277,11 +318,24 @@ public partial class TemplateService : ITemplateService
         variables["case.competentCourt"] = caseEntity.CompetentCourt;
         variables["case.courtFileNumber"] = caseEntity.CourtFileNumber ?? "N/A";
         variables["case.nextActionDate"] = caseEntity.NextActionDate?.ToString("dd.MM.yyyy") ?? "N/A";
+
+        // New claim detail fields
+        variables["case.dateOfOrigin"] = caseEntity.DateOfOrigin?.ToString("dd.MM.yyyy") ?? "N/A";
+        variables["case.claimDescription"] = caseEntity.ClaimDescription ?? "N/A";
+        variables["case.interestStartDate"] = caseEntity.InterestStartDate?.ToString("dd.MM.yyyy") ?? "N/A";
+        variables["case.interestRate"] = caseEntity.InterestRate?.ToString("F2") ?? "N/A";
+        variables["case.isVariableInterest"] = caseEntity.IsVariableInterest.ToString();
+        variables["case.interestEndDate"] = caseEntity.InterestEndDate?.ToString("dd.MM.yyyy") ?? "N/A";
+        variables["case.additionalCosts"] = caseEntity.AdditionalCosts.ToString("F2");
+        variables["case.procedureCosts"] = caseEntity.ProcedureCosts.ToString("F2");
+        variables["case.interestOnCosts"] = caseEntity.InterestOnCosts.ToString();
+        variables["case.statuteOfLimitationsDate"] = caseEntity.StatuteOfLimitationsDate?.ToString("dd.MM.yyyy") ?? "N/A";
+        variables["case.paymentAllocationNotes"] = caseEntity.PaymentAllocationNotes ?? "N/A";
     }
 
     private void AddDebtorVariables(Dictionary<string, string> variables, Debtor debtor)
     {
-        if (debtor.IsCompany)
+        if (debtor.EntityType != EntityType.NATURAL_PERSON)
         {
             variables["debtor.name"] = debtor.CompanyName ?? "N/A";
             variables["debtor.companyName"] = debtor.CompanyName ?? "N/A";
@@ -297,22 +351,149 @@ public partial class TemplateService : ITemplateService
         }
 
         variables["debtor.email"] = debtor.Email ?? "N/A";
-        variables["debtor.phone"] = debtor.Phone ?? "N/A";
+        variables["debtor.phone"] = debtor.PhoneLandline ?? debtor.PhoneMobile ?? "N/A";
+        variables["debtor.phoneLandline"] = debtor.PhoneLandline ?? "N/A";
+        variables["debtor.phoneMobile"] = debtor.PhoneMobile ?? "N/A";
         variables["debtor.street"] = debtor.Street ?? "N/A";
+        variables["debtor.houseNumber"] = debtor.HouseNumber ?? "N/A";
         variables["debtor.zipCode"] = debtor.ZipCode ?? "N/A";
         variables["debtor.city"] = debtor.City ?? "N/A";
+        variables["debtor.cityDistrict"] = debtor.CityDistrict ?? "N/A";
         variables["debtor.country"] = debtor.Country;
-        variables["debtor.address"] = $"{debtor.Street}, {debtor.ZipCode} {debtor.City}";
+        variables["debtor.address"] = $"{debtor.Street} {debtor.HouseNumber}, {debtor.ZipCode} {debtor.City}";
         variables["debtor.totalDebt"] = debtor.TotalDebt.ToString("F2");
         variables["debtor.openCases"] = debtor.OpenCases.ToString();
+        variables["debtor.entityType"] = debtor.EntityType.ToString();
+        variables["debtor.isCompany"] = (debtor.EntityType != EntityType.NATURAL_PERSON).ToString();
+
+        // Extended fields
+        variables["debtor.birthName"] = debtor.BirthName ?? "N/A";
+        variables["debtor.gender"] = debtor.Gender?.ToString() ?? "N/A";
+        variables["debtor.birthPlace"] = debtor.BirthPlace ?? "N/A";
+        variables["debtor.birthCountry"] = debtor.BirthCountry ?? "N/A";
+        variables["debtor.dateOfBirth"] = debtor.DateOfBirth?.ToString("dd.MM.yyyy") ?? "N/A";
+        variables["debtor.floor"] = debtor.Floor ?? "N/A";
+        variables["debtor.doorPosition"] = debtor.DoorPosition?.ToString() ?? "N/A";
+        variables["debtor.additionalAddressInfo"] = debtor.AdditionalAddressInfo ?? "N/A";
+        variables["debtor.poBox"] = debtor.POBox ?? "N/A";
+        variables["debtor.poBoxZipCode"] = debtor.POBoxZipCode ?? "N/A";
+        variables["debtor.representedBy"] = debtor.RepresentedBy ?? "N/A";
+        variables["debtor.isDeceased"] = debtor.IsDeceased.ToString();
+        variables["debtor.placeOfDeath"] = debtor.PlaceOfDeath ?? "N/A";
+        variables["debtor.fax"] = debtor.Fax ?? "N/A";
+        variables["debtor.eboAddress"] = debtor.EboAddress ?? "N/A";
+        variables["debtor.bankIBAN"] = debtor.BankIBAN ?? "N/A";
+        variables["debtor.bankBIC"] = debtor.BankBIC ?? "N/A";
+        variables["debtor.bankName"] = debtor.BankName ?? "N/A";
+        variables["debtor.registerCourt"] = debtor.RegisterCourt ?? "N/A";
+        variables["debtor.registerNumber"] = debtor.RegisterNumber ?? "N/A";
+        variables["debtor.vatId"] = debtor.VatId ?? "N/A";
+        variables["debtor.partners"] = debtor.Partners ?? "N/A";
+        variables["debtor.fileReference"] = debtor.FileReference ?? "N/A";
     }
 
-    private void AddTenantVariables(Dictionary<string, string> variables, Shared.Models.Entities.Tenant tenant)
+    public async Task<Result<RenderTemplateResponse>> RenderPaymentTemplateAsync(
+        Guid id,
+        RenderTemplateRequest request,
+        User currentUser)
     {
-        variables["tenant.name"] = tenant.Name;
-        variables["tenant.registrationNumber"] = tenant.RegistrationNumber;
-        variables["tenant.contactEmail"] = tenant.ContactEmail;
-        variables["tenant.bankAccountIBAN"] = tenant.BankAccountIBAN;
+        try
+        {
+            // Authorization: Only ADMIN can render payment templates with full IBAN
+            if (currentUser.Role != UserRole.ADMIN)
+            {
+                _logger.LogWarning("User {UserId} ({Role}) attempted to render payment template with full IBAN",
+                    currentUser.Id, currentUser.Role);
+                return Result<RenderTemplateResponse>.Failure("Only administrators can render payment templates with full IBAN");
+            }
+
+            var template = await _context.Templates.FindAsync(id);
+
+            if (template == null)
+            {
+                return Result<RenderTemplateResponse>.Failure("Template not found");
+            }
+
+            // Gather data for variable replacement
+            Dictionary<string, string> variables = new();
+
+            // Load case data if provided
+            if (request.CaseId.HasValue)
+            {
+                var caseEntity = await _context.Cases
+                    .Include(c => c.Debtor)
+                    .Include(c => c.Kreditor)
+                    .Include(c => c.Agent)
+                    .FirstOrDefaultAsync(c => c.Id == request.CaseId.Value);
+
+                if (caseEntity == null)
+                {
+                    return Result<RenderTemplateResponse>.Failure("Case not found");
+                }
+
+                AddCaseVariables(variables, caseEntity);
+                AddDebtorVariables(variables, caseEntity.Debtor);
+                AddKreditorVariablesWithFullIBAN(variables, caseEntity.Kreditor, currentUser);
+            }
+            // Load debtor data if provided (and no case)
+            else if (request.DebtorId.HasValue)
+            {
+                var debtor = await _context.Debtors
+                    .Include(d => d.Kreditor)
+                    .FirstOrDefaultAsync(d => d.Id == request.DebtorId.Value);
+
+                if (debtor == null)
+                {
+                    return Result<RenderTemplateResponse>.Failure("Debtor not found");
+                }
+
+                AddDebtorVariables(variables, debtor);
+                AddKreditorVariablesWithFullIBAN(variables, debtor.Kreditor, currentUser);
+            }
+
+            // Render content
+            var renderedContent = ReplaceVariables(template.Content, variables);
+            var renderedSubject = template.Subject != null
+                ? ReplaceVariables(template.Subject, variables)
+                : null;
+
+            var response = new RenderTemplateResponse
+            {
+                RenderedSubject = renderedSubject,
+                RenderedContent = renderedContent
+            };
+
+            _logger.LogInformation("Payment template {TemplateId} rendered with full IBAN by user {UserId}", id, currentUser.Id);
+
+            return Result<RenderTemplateResponse>.Success(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rendering payment template {TemplateId} by user {UserId}", id, currentUser.Id);
+            return Result<RenderTemplateResponse>.Failure("An error occurred while rendering the payment template");
+        }
+    }
+
+    private void AddKreditorVariables(Dictionary<string, string> variables, Shared.Models.Entities.Kreditor kreditor)
+    {
+        variables["kreditor.name"] = kreditor.Name;
+        variables["kreditor.registrationNumber"] = kreditor.RegistrationNumber;
+        variables["kreditor.contactEmail"] = kreditor.ContactEmail;
+        // SECURITY: Mask IBAN in template rendering (only payment templates need full IBAN)
+        // For payment documents, use RenderPaymentTemplateAsync instead
+        variables["kreditor.bankAccountIBAN"] = SensitiveDataHelper.MaskIBAN(kreditor.BankAccountIBAN);
+    }
+
+    private void AddKreditorVariablesWithFullIBAN(Dictionary<string, string> variables, Shared.Models.Entities.Kreditor kreditor, User currentUser)
+    {
+        variables["kreditor.name"] = kreditor.Name;
+        variables["kreditor.registrationNumber"] = kreditor.RegistrationNumber;
+        variables["kreditor.contactEmail"] = kreditor.ContactEmail;
+        // SECURITY: Full IBAN for payment templates (with audit logging)
+        variables["kreditor.bankAccountIBAN"] = kreditor.BankAccountIBAN;
+
+        _logger.LogInformation("Full IBAN accessed for Kreditor {KreditorId} by User {UserId} ({Role}) in payment template",
+            kreditor.Id, currentUser.Id, currentUser.Role);
     }
 
     private TemplateDto MapToDto(Shared.Models.Entities.Template template)

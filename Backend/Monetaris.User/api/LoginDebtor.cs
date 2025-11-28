@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Monetaris.User.Services;
 using Monetaris.User.Models;
@@ -23,31 +24,38 @@ public class LoginDebtor : ControllerBase
     }
 
     /// <summary>
-    /// Authenticate debtor with case number and zip code (magic link)
+    /// Authenticate debtor with case number, zip code, and date of birth (multi-factor authentication)
+    /// Includes rate limiting (5 attempts per hour) and comprehensive audit logging
     /// </summary>
-    /// <param name="request">Debtor login credentials (invoice number and zip code)</param>
+    /// <param name="request">Debtor login credentials (invoice number, zip code, and date of birth)</param>
     /// <returns>Authentication response with JWT tokens and user information</returns>
     /// <response code="200">Login successful - returns access token, refresh token, and user details</response>
-    /// <response code="400">Invalid case number, zip code mismatch, or case not found</response>
+    /// <response code="400">Invalid credentials, rate limit exceeded, or missing date of birth</response>
     [HttpPost("login-debtor")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> LoginDebtorAsync([FromBody] LoginDebtorRequest request)
     {
-        _logger.LogInformation("Debtor login attempt for invoice: {InvoiceNumber}", request.InvoiceNumber);
+        // Log minimal information to avoid leaking sensitive data
+        _logger.LogInformation(
+            "Debtor login attempt. Invoice: {InvoiceNumber}",
+            request.InvoiceNumber);
 
         var result = await _authService.LoginDebtorAsync(request);
 
         if (!result.IsSuccess)
         {
-            _logger.LogWarning(
-                "Debtor login failed for invoice: {InvoiceNumber}. Error: {Error}",
-                request.InvoiceNumber,
-                result.ErrorMessage);
+            // Use generic error message - don't reveal which field was wrong
+            // Detailed error already logged in AuthService with sensitive data
             return BadRequest(new { error = result.ErrorMessage });
         }
 
-        _logger.LogInformation("Debtor login successful for invoice: {InvoiceNumber}", request.InvoiceNumber);
+        _logger.LogInformation(
+            "Debtor login successful. Invoice: {InvoiceNumber}",
+            request.InvoiceNumber);
+
         return Ok(result.Data);
     }
 }

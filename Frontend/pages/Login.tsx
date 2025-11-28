@@ -9,8 +9,8 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@monetaris.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -127,7 +127,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="relative group">
                   <div className="flex justify-between items-center mb-2.5 ml-1">
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-focus-within:text-monetaris-600 dark:group-focus-within:text-monetaris-accent transition-colors">Passwort</label>
-                      <a href="#" className="text-xs font-bold text-monetaris-600 dark:text-monetaris-accent hover:underline">Vergessen?</a>
+                      <a href="#/passwort-vergessen" className="text-xs font-bold text-monetaris-600 dark:text-monetaris-accent hover:underline">Vergessen?</a>
                   </div>
                   <div className="relative">
                     <input
@@ -152,11 +152,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </Button>
              </form>
 
-             <div className="mt-8 pt-8 border-t border-slate-100 dark:border-white/5 text-center">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Kein Account? <a href="#" className="font-bold text-slate-900 dark:text-white hover:text-monetaris-600 dark:hover:text-monetaris-accent transition-colors">Kontaktieren Sie den Vertrieb</a>
-                </p>
-             </div>
           </div>
           
           <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-slate-600">
