@@ -1,0 +1,284 @@
+# Monetaris GitLab CI/CD Pipeline
+# ================================
+
+stages:
+  - build
+  - test
+  - e2e
+  - quality
+
+variables:
+  DOCKER_DRIVER: overlay2
+  POSTGRES_DB: monetaris
+  POSTGRES_USER: monetaris_user
+  POSTGRES_PASSWORD: monetaris_pass
+  DOTNET_VERSION: "9.0"
+  NODE_VERSION: "20"
+
+# ============================================
+# FRONTEND JOBS
+# ============================================
+
+frontend:lint:
+  stage: build
+  image: node:20-alpine
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-frontend
+    paths:
+      - Frontend/node_modules/
+  script:
+    - cd Frontend
+    - npm ci
+    - npm run lint
+    - npm run format:check || true
+  rules:
+    - changes:
+        - Frontend/**/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+frontend:test:
+  stage: test
+  image: node:20-alpine
+  needs: ["frontend:lint"]
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-frontend
+    paths:
+      - Frontend/node_modules/
+  script:
+    - cd Frontend
+    - npm ci
+    - npm test -- --coverage --watchAll=false
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    when: always
+    paths:
+      - Frontend/coverage/
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: Frontend/coverage/cobertura-coverage.xml
+  rules:
+    - changes:
+        - Frontend/**/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# BACKEND JOBS
+# ============================================
+
+backend:build:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-backend
+    paths:
+      - Backend/.nuget/
+  script:
+    - cd Backend
+    - dotnet restore
+    - dotnet build --no-restore --configuration Release
+  artifacts:
+    paths:
+      - Backend/**/bin/
+      - Backend/**/obj/
+    expire_in: 1 hour
+  rules:
+    - changes:
+        - Backend/**/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+backend:test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  needs: ["backend:build"]
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    ConnectionStrings__DefaultConnection: "Host=postgres;Database=$POSTGRES_DB;Username=$POSTGRES_USER;Password=$POSTGRES_PASSWORD"
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-backend
+    paths:
+      - Backend/.nuget/
+  script:
+    - cd Backend
+    - dotnet restore
+    - dotnet test --no-restore --logger "junit;LogFilePath=TestResults/results.xml" --collect:"XPlat Code Coverage"
+  coverage: '/Total\s*\|\s*(\d+\.?\d*)%/'
+  artifacts:
+    when: always
+    paths:
+      - Backend/**/TestResults/
+    reports:
+      junit: Backend/**/TestResults/*.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: Backend/**/TestResults/**/coverage.cobertura.xml
+  rules:
+    - changes:
+        - Backend/**/*
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================
+# E2E TESTS (Playwright)
+# ============================================
+
+e2e:playwright:
+  stage: e2e
+  image: mcr.microsoft.com/playwright:v1.48.0-jammy
+  needs: ["frontend:test", "backend:test"]
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    ConnectionStrings__DefaultConnection: "Host=postgres;Database=$POSTGRES_DB;Username=$POSTGRES_USER;Password=$POSTGRES_PASSWORD"
+    ASPNETCORE_URLS: "http://0.0.0.0:5000"
+    VITE_API_URL: "http://localhost:5000/api"
+  before_script:
+    # Install .NET SDK
+    - apt-get update && apt-get install -y wget
+    - wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+    - chmod +x dotnet-install.sh
+    - ./dotnet-install.sh --channel 9.0
+    - export PATH="$HOME/.dotnet:$PATH"
+    - export DOTNET_ROOT="$HOME/.dotnet"
+  script:
+    # Start Backend
+    - cd Backend/MonetarisApi
+    - dotnet restore
+    - dotnet build
+    - dotnet run --no-build &
+    - sleep 30
+    - cd ../..
+
+    # Run Playwright Tests
+    - cd Frontend
+    - npm ci
+    - npx playwright install --with-deps chromium
+    - npm run test:e2e -- --project=chromium
+  artifacts:
+    when: always
+    paths:
+      - Frontend/playwright-report/
+      - Frontend/test-results/
+    reports:
+      junit: Frontend/test-results/junit.xml
+    expire_in: 7 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true  # E2E tests können instabil sein
+
+# ============================================
+# API CONTRACT TESTS (Schemathesis)
+# ============================================
+
+api:contract:
+  stage: e2e
+  image: python:3.11-slim
+  needs: ["backend:test"]
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    ConnectionStrings__DefaultConnection: "Host=postgres;Database=$POSTGRES_DB;Username=$POSTGRES_USER;Password=$POSTGRES_PASSWORD"
+  before_script:
+    - apt-get update && apt-get install -y wget curl
+    - wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh
+    - chmod +x dotnet-install.sh
+    - ./dotnet-install.sh --channel 9.0
+    - export PATH="$HOME/.dotnet:$PATH"
+    - pip install schemathesis
+  script:
+    # Start Backend
+    - cd Backend/MonetarisApi
+    - $HOME/.dotnet/dotnet restore
+    - $HOME/.dotnet/dotnet build
+    - ASPNETCORE_URLS=http://0.0.0.0:5000 $HOME/.dotnet/dotnet run --no-build &
+    - sleep 30
+
+    # Run Schemathesis
+    - schemathesis run http://localhost:5000/swagger/v1/swagger.json --checks all --report || true
+  artifacts:
+    when: always
+    paths:
+      - schemathesis-report/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+  allow_failure: true
+
+# ============================================
+# CODE QUALITY (SonarQube)
+# ============================================
+
+sonarqube:
+  stage: quality
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  needs: ["backend:test", "frontend:test"]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - apt-get update && apt-get install -y openjdk-17-jre nodejs npm
+    - dotnet tool install --global dotnet-sonarscanner
+    - export PATH="$PATH:$HOME/.dotnet/tools"
+    - |
+      dotnet sonarscanner begin \
+        /k:"monetaris" \
+        /d:sonar.host.url="${SONAR_HOST_URL}" \
+        /d:sonar.token="${SONAR_TOKEN}" \
+        /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+        /d:sonar.javascript.lcov.reportPaths="Frontend/coverage/lcov.info"
+    - cd Backend && dotnet build && cd ..
+    - dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  allow_failure: true
+
+# ============================================
+# DEPLOYMENT (Optional)
+# ============================================
+
+.deploy_template:
+  stage: .post
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+
+deploy:staging:
+  extends: .deploy_template
+  environment:
+    name: staging
+    url: https://staging.monetaris.de
+  script:
+    - echo "Deploying to staging..."
+    # Add deployment commands here
+
+deploy:production:
+  extends: .deploy_template
+  environment:
+    name: production
+    url: https://app.monetaris.de
+  script:
+    - echo "Deploying to production..."
+    # Add deployment commands here
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
